@@ -7,7 +7,7 @@
     "server": "node server/index.js",
     "client": "npm --prefix client run dev",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"node server/index.js\" \"npm --prefix client run dev\"",
-    "build": "npm --prefix client run build"
+    "build": "node build.js"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
