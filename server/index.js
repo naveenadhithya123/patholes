@@ -623,8 +623,14 @@ app.get('/api/analytics', (req, res) => {
 });
 
 // Static frontend serving (Production Build)
-const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
-if (fs.existsSync(clientDistPath)) {
+const candidateDistPaths = [
+  path.join(__dirname, '..', 'dist'),
+  path.join(__dirname, '..', 'client', 'dist'),
+  path.join(process.cwd(), 'client', 'dist'),
+  path.join(process.cwd(), 'dist')
+];
+const clientDistPath = candidateDistPaths.find(p => fs.existsSync(p));
+if (clientDistPath) {
   app.use(express.static(clientDistPath));
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) return next();
