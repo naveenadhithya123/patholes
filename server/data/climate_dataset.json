@@ -1,0 +1,117 @@
+[
+  {
+    "zone_id": "ZONE-MAHADEVAPURA",
+    "zone_name": "Mahadevapura (Tech Corridor / Bellandur / Whitefield)",
+    "wards_covered": [150, 84, 149, 85],
+    "current_weather": {
+      "temperature_c": 22.4,
+      "temp_max_24h_c": 33.8,
+      "temp_min_24h_c": 19.1,
+      "temp_swing_12h_c": 14.7,
+      "rainfall_last_24h_mm": 68.4,
+      "peak_rain_intensity_mm_hr": 42.0,
+      "humidity_pct": 92,
+      "soil_saturation_pct": 89
+    },
+    "climate_volatility_index": 88,
+    "rapid_fluctuation_detected": true,
+    "volatility_type": "Severe Flash Rain & Rapid Thermal Drop",
+    "pavement_erosion_multiplier": 1.75,
+    "drainage_overcapacity_risk": "CRITICAL",
+    "predictive_damage_forecast": "Extreme risk of sub-base liquification & pothole proliferation on Outer Ring Road and Whitefield within 36 hours. Bituminous bonding failure likely.",
+    "recommended_civic_action": "Pre-position rapid cold-mix asphalt response trucks & clear storm drainage catchpits immediately.",
+    "last_updated": "2026-10-29T21:00:00Z"
+  },
+  {
+    "zone_id": "ZONE-EAST",
+    "zone_name": "East Zone (Indiranagar / KR Puram / Domlur / MG Road)",
+    "wards_covered": [112, 80, 111, 52],
+    "current_weather": {
+      "temperature_c": 23.5,
+      "temp_max_24h_c": 32.1,
+      "temp_min_24h_c": 20.4,
+      "temp_swing_12h_c": 11.7,
+      "rainfall_last_24h_mm": 45.2,
+      "peak_rain_intensity_mm_hr": 28.5,
+      "humidity_pct": 86,
+      "soil_saturation_pct": 74
+    },
+    "climate_volatility_index": 72,
+    "rapid_fluctuation_detected": true,
+    "volatility_type": "Moderate Precipitation Shock",
+    "pavement_erosion_multiplier": 1.45,
+    "drainage_overcapacity_risk": "HIGH",
+    "predictive_damage_forecast": "High shear stress on KR Puram and Domlur flyover ramps. Expansion joint displacement monitored.",
+    "recommended_civic_action": "Inspect flyover drainage gutters and deploy suction tankers to prevent bridge deck water ponding.",
+    "last_updated": "2026-10-29T21:05:00Z"
+  },
+  {
+    "zone_id": "ZONE-BOMMANAHALLI",
+    "zone_name": "Bommanahalli / Bannerghatta Corridor",
+    "wards_covered": [193, 174, 188],
+    "current_weather": {
+      "temperature_c": 22.8,
+      "temp_max_24h_c": 34.0,
+      "temp_min_24h_c": 19.5,
+      "temp_swing_12h_c": 14.5,
+      "rainfall_last_24h_mm": 58.0,
+      "peak_rain_intensity_mm_hr": 36.2,
+      "humidity_pct": 90,
+      "soil_saturation_pct": 84
+    },
+    "climate_volatility_index": 82,
+    "rapid_fluctuation_detected": true,
+    "volatility_type": "Thermal Shock + Heavy Runoff Ingress",
+    "pavement_erosion_multiplier": 1.65,
+    "drainage_overcapacity_risk": "CRITICAL",
+    "predictive_damage_forecast": "Pavement peeling along Bannerghatta Main Road due to water ingress beneath degraded bitumen layer.",
+    "recommended_civic_action": "Issue high-alert notice to Ward 193 emergency road maintenance wing.",
+    "last_updated": "2026-10-29T21:10:00Z"
+  },
+  {
+    "zone_id": "ZONE-SOUTH",
+    "zone_name": "South Zone (Koramangala / Jayanagar / Banashankari)",
+    "wards_covered": [151, 180, 168],
+    "current_weather": {
+      "temperature_c": 24.1,
+      "temp_max_24h_c": 30.5,
+      "temp_min_24h_c": 22.0,
+      "temp_swing_12h_c": 8.5,
+      "rainfall_last_24h_mm": 21.0,
+      "peak_rain_intensity_mm_hr": 12.0,
+      "humidity_pct": 78,
+      "soil_saturation_pct": 58
+    },
+    "climate_volatility_index": 42,
+    "rapid_fluctuation_detected": false,
+    "volatility_type": "Stable Seasonal Patterns",
+    "pavement_erosion_multiplier": 1.10,
+    "drainage_overcapacity_risk": "LOW",
+    "predictive_damage_forecast": "Normal seasonal wear; standard preventive maintenance cycle sufficient.",
+    "recommended_civic_action": "Routine sweeping and scheduled ward road audit.",
+    "last_updated": "2026-10-29T21:15:00Z"
+  },
+  {
+    "zone_id": "ZONE-YELAHANKA",
+    "zone_name": "Yelahanka & North Corridor (Hebbal / Airport Road)",
+    "wards_covered": [7, 5, 12],
+    "current_weather": {
+      "temperature_c": 23.0,
+      "temp_max_24h_c": 31.8,
+      "temp_min_24h_c": 20.1,
+      "temp_swing_12h_c": 11.7,
+      "rainfall_last_24h_mm": 38.6,
+      "peak_rain_intensity_mm_hr": 22.0,
+      "humidity_pct": 82,
+      "soil_saturation_pct": 69
+    },
+    "climate_volatility_index": 65,
+    "rapid_fluctuation_detected": true,
+    "volatility_type": "Moderate Runoff Volatility",
+    "pavement_erosion_multiplier": 1.35,
+    "drainage_overcapacity_risk": "MODERATE",
+    "predictive_damage_forecast": "Moderate degradation risk on aging flyover sections and underpass entries.",
+    "recommended_civic_action": "Clear storm drain silt traps along Bellary Road corridor.",
+    "last_updated": "2026-10-29T21:20:00Z"
+  }
+]

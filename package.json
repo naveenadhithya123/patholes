@@ -1,0 +1,21 @@
+{
+  "name": "alliance-one",
+  "version": "1.0.0",
+  "description": "CivicEye AI - AI-Based Urban Infrastructure & Road Asset Monitoring System",
+  "main": "server/index.js",
+  "scripts": {
+    "server": "node server/index.js",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"node server/index.js\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client run build"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.9",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^11.1.0"
+  }
+}
