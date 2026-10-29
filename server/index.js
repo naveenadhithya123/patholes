@@ -17,13 +17,9 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // In-Memory Database initialized from Seed Datasets
-const ROADS_PATH = path.join(__dirname, 'data', 'roads_dataset.json');
-const CLIMATE_PATH = path.join(__dirname, 'data', 'climate_dataset.json');
-const DEFECTS_PATH = path.join(__dirname, 'data', 'defects_seed.json');
-
-let roadsData = JSON.parse(fs.readFileSync(ROADS_PATH, 'utf8'));
-let climateData = JSON.parse(fs.readFileSync(CLIMATE_PATH, 'utf8'));
-let defectsData = JSON.parse(fs.readFileSync(DEFECTS_PATH, 'utf8'));
+let roadsData = require('./data/roads_dataset.json');
+let climateData = require('./data/climate_dataset.json');
+let defectsData = [...require('./data/defects_seed.json')];
 
 // AI Engine Status Endpoints
 app.get('/api/system/ai-status', (req, res) => {
@@ -636,6 +632,10 @@ if (fs.existsSync(clientDistPath)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`Infra AI Municipal Monitoring API server running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Infra AI Municipal Monitoring API server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
