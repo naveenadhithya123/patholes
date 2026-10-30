@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import LandingDashboard from './components/LandingDashboard';
+import MapViewPage from './components/MapViewPage';
 import CitizenCameraPortal from './components/CitizenCameraPortal';
-import VehicleBumperSimulator from './components/VehicleBumperSimulator';
+import FindByAreaView from './components/FindByAreaView';
 import GovernmentPortal from './components/GovernmentPortal';
 
 export default function App() {
   // Routing based on URL pathname
-  // Government Portal is ONLY reachable by typing "/login" in the browser URL!
+  // Government Portal is reachable by typing "/login" in the browser URL
   const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
 
-  const [activeTab, setActiveTab] = useState(() => {
-    if (window.location.pathname === '/sensor-gateway') return 'vehicle';
-    return 'citizen';
-  });
+  // Active subview on the main platform:
+  // 'home' (3-Button Clean Dashboard) | 'map' | 'capture' | 'area'
+  const [currentView, setCurrentView] = useState('home');
 
   const [govUser, setGovUser] = useState(() => {
     const saved = localStorage.getItem('infra_ai_gov_user');
@@ -28,10 +29,8 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
-      if (window.location.pathname === '/sensor-gateway') {
-        setActiveTab('vehicle');
-      } else if (window.location.pathname === '/') {
-        setActiveTab('citizen');
+      if (window.location.pathname === '/') {
+        setCurrentView('home');
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -41,10 +40,8 @@ export default function App() {
   const navigateTo = (path) => {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
-    if (path === '/sensor-gateway') {
-      setActiveTab('vehicle');
-    } else if (path === '/') {
-      setActiveTab('citizen');
+    if (path === '/') {
+      setCurrentView('home');
     }
   };
 
@@ -93,12 +90,6 @@ export default function App() {
     fetchAllData();
   };
 
-  const handleTelemetryEvent = (telemetryData) => {
-    if (telemetryData.action === 'NEW_DEFECT_DISPATCHED') {
-      fetchAllData();
-    }
-  };
-
   const handleDefectUpdated = (updatedDefect) => {
     setDefects(prev => prev.map(d => (d.id === updatedDefect.id ? updatedDefect : d)));
     fetchAllData();
@@ -111,8 +102,8 @@ export default function App() {
       
       {/* Top Navbar: Brand Infra AI */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        currentView={currentView}
+        onSelectView={setCurrentView}
         govUser={govUser}
         onLogout={handleLogout}
         isLoginPage={isLoginPage}
@@ -121,7 +112,11 @@ export default function App() {
 
       {/* Main View:
           - If URL is "/login", render Government Portal (BBMP Login / Command Center).
-          - Otherwise, render Citizen Live Cam or Vehicle Hardware Gateway.
+          - Otherwise:
+            1. 'home': Clean 3-Button Dashboard (Map View, Capture Potholes, Find By Area)
+            2. 'map': City Road Defect Map View
+            3. 'capture': Real-Time Camera Pothole Capture with Live GPS
+            4. 'area': Find Defects By Area / Ward Directory
       */}
       <main className="flex-1 pb-16">
         {isLoginPage ? (
@@ -135,13 +130,26 @@ export default function App() {
             analytics={analytics}
             onDefectUpdated={handleDefectUpdated}
           />
-        ) : activeTab === 'citizen' ? (
+        ) : currentView === 'map' ? (
+          <MapViewPage
+            onBack={() => setCurrentView('home')}
+            defects={defects}
+            roads={roads}
+          />
+        ) : currentView === 'capture' ? (
           <CitizenCameraPortal
+            onBack={() => setCurrentView('home')}
             onDefectReported={handleDefectReported}
           />
+        ) : currentView === 'area' ? (
+          <FindByAreaView
+            onBack={() => setCurrentView('home')}
+            defects={defects}
+          />
         ) : (
-          <VehicleBumperSimulator
-            onTelemetryEvent={handleTelemetryEvent}
+          <LandingDashboard
+            onSelectView={setCurrentView}
+            defects={defects}
           />
         )}
       </main>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, Zap, Info, Eye, Navigation, Sparkles, AlertTriangle, Send, Check, ExternalLink } from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, Zap, Info, Eye, Navigation, Sparkles, AlertTriangle, Send, Check, ExternalLink, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const LOCATION_PRESETS = [
@@ -12,7 +12,7 @@ const LOCATION_PRESETS = [
   { name: 'Koramangala 4th Block Interior Road (Moderate Residential)', lat: 12.9312, lng: 77.6302, ward_no: 151, ward_name: 'Koramangala', zone: 'South', road_name: '80ft Peripheral Corridor', traffic_tier: 'MODERATE (42k PCU/day)' }
 ];
 
-export default function CitizenCameraPortal({ onDefectReported }) {
+export default function CitizenCameraPortal({ onDefectReported, onBack }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [simulatedFeed, setSimulatedFeed] = useState(false); // real physical camera by default
@@ -683,41 +683,39 @@ export default function CitizenCameraPortal({ onDefectReported }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-950/70 via-slate-900 to-indigo-950/60 p-5 rounded-2xl border border-blue-500/20 shadow-xl backdrop-blur-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start space-x-3.5">
-            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-400/30 text-blue-400">
-              <Camera className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-bold text-white tracking-tight">
-                  Infra AI • Automated Computer Vision Road Scanner
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  Zero Manual Selections
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono">
-                  Live OpenCV Detection
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-                Simply move your camera towards the road or wall damage. The OpenCV algorithm automatically reacts in real time,
-                classifies whether it is a pothole, wall fracture, or bridge crack, and measures its depth and length live on screen before posting with your device GPS.
-              </p>
-            </div>
-          </div>
+      {/* Top Header with Back to Dashboard Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex items-center space-x-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition flex items-center space-x-1.5 text-xs font-semibold"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </button>
+          )}
 
-          <div className="flex items-center space-x-2 bg-slate-950/80 px-3.5 py-2 rounded-xl border border-slate-800 text-xs">
-            <div className={`w-2.5 h-2.5 rounded-full ${gpsLocation.acquired ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`}></div>
-            <span className="text-slate-400 font-mono">Location Mode:</span>
-            <span className={gpsLocation.acquired ? 'text-emerald-400 font-mono font-semibold' : 'text-cyan-300 font-mono font-semibold'}>
-              {gpsLocation.acquired
-                ? `${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`
-                : 'Auto-Tagged on Submit'}
-            </span>
+          <div>
+            <h1 className="text-xl font-bold text-white flex items-center space-x-2">
+              <Camera className="w-5 h-5 text-cyan-400" />
+              <span>Capture Potholes with Live GPS</span>
+            </h1>
+            <p className="text-xs text-slate-400">
+              OpenCV AI automatically measures cavity depth & dimensions, and tags verified device GPS on submit.
+            </p>
           </div>
+        </div>
+
+        <div className="flex items-center space-x-2 bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800 text-xs font-mono">
+          <div className={`w-2.5 h-2.5 rounded-full ${gpsLocation.acquired ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`}></div>
+          <span className="text-slate-400">GPS Mode:</span>
+          <span className={gpsLocation.acquired ? 'text-emerald-400 font-bold' : 'text-cyan-300 font-bold'}>
+            {gpsLocation.acquired
+              ? `${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`
+              : 'Auto-Locked on Submit'}
+          </span>
         </div>
       </div>
 
@@ -890,13 +888,6 @@ export default function CitizenCameraPortal({ onDefectReported }) {
               </button>
             </div>
 
-          </div>
-
-          <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start space-x-3">
-            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-            <p>
-              <strong className="text-slate-200">Continuous OpenCV Detection:</strong> As you move your camera towards the road or wall, the system automatically detects the damage, draws the bounding box, and estimates the depth and length. When you click Post, it uploads to <strong className="text-cyan-400">Column 2 (Citizen Submissions)</strong> in the Government Portal.
-            </p>
           </div>
         </div>
 

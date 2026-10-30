@@ -1,7 +1,7 @@
 import React from 'react';
-import { Camera, Car, ShieldAlert, Activity, Award, LogOut } from 'lucide-react';
+import { ShieldAlert, Activity, Award, LogOut, Home } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, govUser, onLogout, isLoginPage, onNavigate }) {
+export default function Navbar({ currentView, onSelectView, govUser, onLogout, isLoginPage, onNavigate }) {
   return (
     <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 text-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -10,7 +10,10 @@ export default function Navbar({ activeTab, setActiveTab, govUser, onLogout, isL
           {/* Logo & Civic Identity: Infra AI */}
           <div 
             className="flex items-center space-x-3 cursor-pointer" 
-            onClick={() => onNavigate('/')}
+            onClick={() => {
+              if (onSelectView) onSelectView('home');
+              if (onNavigate) onNavigate('/');
+            }}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
               <Activity className="w-6 h-6 text-white" />
@@ -34,42 +37,29 @@ export default function Navbar({ activeTab, setActiveTab, govUser, onLogout, isL
           <div className="hidden lg:flex items-center space-x-2 text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
             <Award className="w-4 h-4 text-emerald-400" />
             <span className="text-slate-300">
-              <strong className="text-emerald-400">SDG 9</strong> Industry & Infra | <strong className="text-amber-400">SDG 11</strong> Sustainable Cities
+              <strong className="text-emerald-400">SDG 9</strong> Resilient Infra | <strong className="text-amber-400">SDG 11</strong> Smart Cities
             </span>
           </div>
 
-          {/* Navigation Controls: Only Citizen Cam and Vehicle Sensor Simulator!
-              NO "Government Portal" button here — government access is ONLY via typing /login in URL! */}
+          {/* Navigation Controls: Clean & uncluttered */}
           {!isLoginPage ? (
-            <nav className="flex items-center space-x-1 sm:space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-800/80">
-              {/* Citizen Mode */}
-              <button
-                onClick={() => onNavigate('/')}
-                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'citizen'
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Citizen Live Cam</span>
-                <span className="hidden md:inline text-[10px] opacity-75 font-normal">(No Login)</span>
-              </button>
-
-              {/* Vehicle Sensor Ingestion Gateway */}
-              <button
-                onClick={() => onNavigate('/sensor-gateway')}
-                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'vehicle'
-                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Car className="w-3.5 h-3.5" />
-                <span>Vehicle LiDAR Gateway</span>
-                <span className="hidden md:inline px-1 py-0.2 bg-cyan-400/20 text-cyan-300 text-[9px] rounded uppercase font-bold">Hardware Sim</span>
-              </button>
-            </nav>
+            <div className="flex items-center space-x-2">
+              {currentView && currentView !== 'home' ? (
+                <button
+                  type="button"
+                  onClick={() => onSelectView('home')}
+                  className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 hover:border-slate-700 transition shadow-sm cursor-pointer"
+                >
+                  <Home className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Main Dashboard</span>
+                </button>
+              ) : (
+                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="hidden sm:inline">Platform Active</span>
+                </div>
+              )}
+            </div>
           ) : (
             /* On /login route */
             <div className="flex items-center space-x-3">
