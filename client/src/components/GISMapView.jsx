@@ -1,13 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Layers, Compass } from 'lucide-react';
 
 export default function GISMapView({
   defects = [],
-  roads = [],
   userLocation = null,
   destination = null,
-  activeRoute = 'safe',
+  activeRoute = 'direct',
   routes = null,
   onMapClick,
   onSelectDefect,
@@ -15,16 +13,12 @@ export default function GISMapView({
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const baseTileLayerRef = useRef(null);
   const markersRef = useRef([]);
   const routeLayersRef = useRef([]);
   const userMarkerRef = useRef(null);
   const destMarkerRef = useRef(null);
 
-  // Map layer toggle: 'satellite' (Google Hybrid Aerial with buildings) vs 'streets'
-  const [mapLayer, setMapLayer] = useState('satellite');
-
-  // 1. Initialize Map Instance
+  // 1. Initialize Map Instance with Permanent Google Maps Satellite View
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -34,27 +28,25 @@ export default function GISMapView({
 
       const map = L.map(mapContainerRef.current, {
         center: [initialLat, initialLng],
-        zoom: 14,
-        zoomControl: false // Custom placement below
+        zoom: 13,
+        zoomControl: false
       });
 
       // Zoom control in top-right
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Default to Google Maps Satellite Hybrid (Real buildings, rooftops, roads, street names)
-      const baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      // Authentic Google Maps Satellite Hybrid (Real Buildings, Rooftops, Real Roads, Street Names)
+      L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         attribution: '&copy; Google Satellite | Infra AI GIS',
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
       }).addTo(map);
 
-      baseTileLayerRef.current = baseLayer;
-
       // Click on map to set custom destination
       map.on('click', (e) => {
         if (onMapClick) {
           onMapClick({
-            name: `Pinned Satellite Point (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`,
+            name: `Satellite Location (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`,
             lat: e.latlng.lat,
             lng: e.latlng.lng
           });
@@ -65,41 +57,13 @@ export default function GISMapView({
     }
 
     return () => {
-      // Cleanup on unmount
+      // Map instance preserved
     };
   }, []);
 
   const map = mapInstanceRef.current;
 
-  // 2. Switch Base Tile Layer (Google Satellite vs Street Map)
-  useEffect(() => {
-    if (!map) return;
-
-    if (baseTileLayerRef.current) {
-      map.removeLayer(baseTileLayerRef.current);
-    }
-
-    let newLayer;
-    if (mapLayer === 'satellite') {
-      // Google Hybrid: High-res satellite imagery + physical buildings + road overlays + street labels
-      newLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Satellite | Infra AI GIS',
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-      });
-    } else {
-      // Esri World Street Map (Clean GIS vector roads)
-      newLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; Esri World Street Map | Infra AI GIS',
-        maxZoom: 19
-      });
-    }
-
-    newLayer.addTo(map);
-    baseTileLayerRef.current = newLayer;
-  }, [mapLayer, map]);
-
-  // 3. Render Defect Markers (Animated Pulsing Movie Radar on Critical Potholes)
+  // 2. Render Defect Markers (Animated Pulsing Movie Radar on Critical Road Potholes)
   useEffect(() => {
     if (!map) return;
 
@@ -110,22 +74,15 @@ export default function GISMapView({
     defects.forEach(defect => {
       if (!defect.location || typeof defect.location.lat !== 'number' || typeof defect.location.lng !== 'number') return;
 
-      const priority = defect.ai_calculated_priority;
-      const isCritical = defect.severity === 'CRITICAL' || priority === 'P1_IMMEDIATE' || defect.severity === 'Severe';
-      const isHigh = defect.severity === 'HIGH' || priority === 'P2_HIGH';
-      const isResolved = defect.status === 'Resolved' || defect.status === 'Fixed';
+      const isCritical = defect.severity === 'CRITICAL' || defect.severity === 'Severe';
+      const isHigh = defect.severity === 'HIGH';
 
-      let markerColor = '#3b82f6';
-      if (isResolved) markerColor = '#10b981';
-      else if (isCritical) markerColor = '#f43f5e';
-      else if (isHigh) markerColor = '#f59e0b';
-
-      // Movie Radar Pulsing Effect for Critical Hazards
+      // Movie Radar Pulsing Effect for Critical Road Potholes
       const markerHtml = isCritical ? `
         <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.4); animation: ping 1.3s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(239, 68, 68, 0.6); animation: pulse 1.6s ease-in-out infinite;"></div>
-          <div style="position: relative; width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 0 16px #ef4444; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 11px; font-weight: 900; font-family: monospace;">
+          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.45); animation: ping 1.3s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(239, 68, 68, 0.65); animation: pulse 1.6s ease-in-out infinite;"></div>
+          <div style="position: relative; width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 0 16px #ef4444; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 12px; font-weight: 900; font-family: monospace;">
             !
           </div>
         </div>
@@ -134,9 +91,9 @@ export default function GISMapView({
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: ${markerColor};
+          background: #f59e0b;
           border: 2px solid #ffffff;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -145,12 +102,12 @@ export default function GISMapView({
           font-weight: 800;
           cursor: pointer;
         ">
-          ${isResolved ? '✓' : isHigh ? '▲' : '●'}
+          ▲
         </div>
       `;
 
       const customIcon = L.divIcon({
-        className: 'civic-defect-marker',
+        className: 'road-pothole-marker',
         html: markerHtml,
         iconSize: [34, 34],
         iconAnchor: [17, 17]
@@ -160,31 +117,31 @@ export default function GISMapView({
 
       // Popup with inspection telemetry & delay calculation
       marker.bindPopup(`
-        <div style="min-width: 240px; font-family: system-ui, sans-serif; padding: 4px; color: #0f172a;">
+        <div style="min-width: 230px; font-family: system-ui, sans-serif; padding: 4px; color: #0f172a;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-weight: 800; font-size: 11px; font-family: monospace; color: #0284c7;">
-              #${defect.ticket_code || 'INFRA-CRIT'}
+              #${defect.ticket_code || 'ROAD-HAZARD'}
             </span>
-            <span style="font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; background: ${isCritical ? '#ffe4e6' : '#fef3c7'}; color: ${isCritical ? '#dc2626' : '#b45309'}; text-transform: uppercase;">
+            <span style="font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; background: #ffe4e6; color: #dc2626; text-transform: uppercase;">
               ${defect.severity || 'CRITICAL'}
             </span>
           </div>
 
           <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 4px;">
-            ${defect.category_label || defect.title || 'Severe Road Pothole'}
+            ${defect.category_label || 'Severe Road Pothole'}
           </div>
 
           <div style="font-size: 11px; color: #475569; margin-bottom: 6px;">
-            📍 ${defect.location.address || 'Smart City Arterial Corridor'}
+            📍 ${defect.location.address || 'Real Road Navigation Corridor'}
           </div>
 
           <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 6px; font-size: 11px; font-family: monospace; margin-bottom: 6px;">
-            <div style="color: #b91c1c; font-weight: bold;">⚠️ Traffic Slowdown: +60s / pothole</div>
-            <div style="color: #475569; margin-top: 2px;">Depth: <strong style="color: #dc2626;">${defect.dimensions?.depth_cm || 14} cm</strong> • Width: <strong>${defect.dimensions?.width_cm || 52} cm</strong></div>
+            <div style="color: #b91c1c; font-weight: bold;">⚠️ Vehicle Slowdown: +60s Crawl Delay</div>
+            <div style="color: #475569; margin-top: 2px;">Depth: <strong style="color: #dc2626;">${defect.dimensions?.depth_cm || 15} cm</strong> • Width: <strong>${defect.dimensions?.width_cm || 55} cm</strong></div>
           </div>
 
           <div style="font-size: 10px; color: #64748b;">
-            GPS: ${defect.location.lat.toFixed(5)}, ${defect.location.lng.toFixed(5)}
+            Road GPS: ${defect.location.lat.toFixed(5)}, ${defect.location.lng.toFixed(5)}
           </div>
         </div>
       `);
@@ -197,7 +154,7 @@ export default function GISMapView({
     });
   }, [defects, map]);
 
-  // 4. Render User Live Location (Google Maps-Style Pulsing Blue Beacon)
+  // 3. Render User Live Location (Blinking Google Maps Blue GPS Beacon)
   useEffect(() => {
     if (!map) return;
 
@@ -211,8 +168,8 @@ export default function GISMapView({
         className: 'user-live-gps-beacon',
         html: `
           <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
-            <div style="position: absolute; width: 38px; height: 38px; border-radius: 50%; background: rgba(37, 99, 235, 0.35); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(37, 99, 235, 0.45); animation: pulse 2s ease-in-out infinite;"></div>
+            <div style="position: absolute; width: 38px; height: 38px; border-radius: 50%; background: rgba(37, 99, 235, 0.4); animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(37, 99, 235, 0.5); animation: pulse 1.8s ease-in-out infinite;"></div>
             <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background: #2563eb; border: 3px solid #ffffff; box-shadow: 0 0 12px #3b82f6;"></div>
           </div>
         `,
@@ -223,12 +180,9 @@ export default function GISMapView({
       const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: liveUserIcon }).addTo(map);
       userMarker.bindPopup(`
         <div style="font-family: sans-serif; padding: 4px; font-size: 12px; font-weight: 700; color: #1e3a8a;">
-          📍 Origin: Your Live GPS Location
+          📍 Origin (Your Live Location)
           <div style="font-size: 11px; font-weight: normal; color: #334155; margin-top: 2px;">
-            ${userLocation.name || 'Device Location'}
-          </div>
-          <div style="font-size: 10px; font-weight: normal; color: #64748b; font-family: monospace; margin-top: 2px;">
-            ${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)}
+            ${userLocation.name || 'Current GPS'}
           </div>
         </div>
       `);
@@ -237,7 +191,7 @@ export default function GISMapView({
     }
   }, [userLocation, map]);
 
-  // 5. Render Destination Pin
+  // 4. Render Google Maps Iconic Red Destination Teardrop Pin
   useEffect(() => {
     if (!map) return;
 
@@ -248,29 +202,28 @@ export default function GISMapView({
 
     if (destination && typeof destination.lat === 'number' && typeof destination.lng === 'number') {
       const destIcon = L.divIcon({
-        className: 'destination-marker-icon',
+        className: 'google-maps-destination-pin',
         html: `
-          <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 30px; height: 30px; border-radius: 50%; background: #06b6d4; border: 2.5px solid #ffffff; box-shadow: 0 0 14px #06b6d4; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 14px;">
-              🏁
-            </div>
+          <div style="position: relative; width: 34px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));">
+            <svg viewBox="0 0 24 36" width="34" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21.5 12 36 12 36C12 36 24 21.5 24 12C24 5.37258 18.6274 0 12 0Z" fill="#EA4335" stroke="#FFFFFF" stroke-width="1.2"/>
+              <circle cx="12" cy="12" r="5" fill="#FFFFFF"/>
+              <circle cx="12" cy="12" r="2.8" fill="#B3261E"/>
+            </svg>
           </div>
         `,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        iconSize: [34, 42],
+        iconAnchor: [17, 39]
       });
 
       const destMarker = L.marker([destination.lat, destination.lng], { icon: destIcon }).addTo(map);
       destMarker.bindPopup(`
-        <div style="font-family: system-ui, sans-serif; padding: 4px; font-size: 12px; font-weight: 700; color: #0e7490;">
-          🏁 Destination:
+        <div style="font-family: system-ui, sans-serif; padding: 4px; font-size: 12px; font-weight: 700; color: #b91c1c;">
+          📍 Destination:
           <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-top: 2px;">
-            ${destination.name || 'Selected Waypoint'}
+            ${destination.name || 'Target Location'}
           </div>
           ${destination.fullName ? `<div style="font-size: 10px; color: #475569; margin-top: 2px;">${destination.fullName}</div>` : ''}
-          <div style="font-size: 10px; font-family: monospace; color: #64748b; margin-top: 2px;">
-            ${destination.lat.toFixed(5)}, ${destination.lng.toFixed(5)}
-          </div>
         </div>
       `);
 
@@ -278,7 +231,7 @@ export default function GISMapView({
     }
   }, [destination, map]);
 
-  // 6. Render Navigation Routes (Google Maps-Style: Active Route + Inactive Route in background)
+  // 5. Render Navigation Routes (SOLID, CONTINUOUS LINES ALONG REAL ROADS - NO BREAKS / NO DASHES)
   useEffect(() => {
     if (!map) return;
 
@@ -290,15 +243,14 @@ export default function GISMapView({
 
     const boundsPoints = [];
 
-    // Draw Inactive / Background Route first (like Google Maps alternative route)
-    if (activeRoute === 'safe' && routes.direct && routes.direct.path.length > 0) {
-      // Inactive Direct route shown in muted reddish-slate with dashes
+    // Draw Inactive / Alternative Route in Background (Continuous solid line, 50% opacity, no breaks)
+    if (activeRoute === 'safe' && routes.direct && routes.direct.path && routes.direct.path.length > 0) {
       const directBg = L.polyline(routes.direct.path, {
         color: '#f87171',
-        weight: 4,
+        weight: 5,
         opacity: 0.55,
-        dashArray: '6, 8',
-        lineCap: 'round'
+        lineCap: 'round',
+        lineJoin: 'round'
       }).addTo(map);
 
       directBg.on('click', () => {
@@ -307,14 +259,13 @@ export default function GISMapView({
 
       routeLayersRef.current.push(directBg);
       boundsPoints.push(...routes.direct.path);
-    } else if (activeRoute === 'direct' && routes.safe && routes.safe.path.length > 0) {
-      // Inactive Safe detour route shown in muted emerald-slate
+    } else if (activeRoute === 'direct' && routes.safe && routes.safe.path && routes.safe.path.length > 0) {
       const safeBg = L.polyline(routes.safe.path, {
         color: '#34d399',
-        weight: 4,
+        weight: 5,
         opacity: 0.55,
-        dashArray: '6, 8',
-        lineCap: 'round'
+        lineCap: 'round',
+        lineJoin: 'round'
       }).addTo(map);
 
       safeBg.on('click', () => {
@@ -325,20 +276,21 @@ export default function GISMapView({
       boundsPoints.push(...routes.safe.path);
     }
 
-    // Draw Active Selected Route (High contrast, glowing, bold)
-    if (activeRoute === 'safe' && routes.safe && routes.safe.path.length > 0) {
-      // Outer glow for Safe Route
+    // Draw Active Selected Route (Solid, Continuous, Glowing High-Contrast Google Maps Polyline)
+    if (activeRoute === 'safe' && routes.safe && routes.safe.path && routes.safe.path.length > 0) {
+      // Emerald Outer Glow
       const glow = L.polyline(routes.safe.path, {
-        color: '#059669',
+        color: '#047857',
         weight: 10,
         opacity: 0.45,
-        lineCap: 'round'
+        lineCap: 'round',
+        lineJoin: 'round'
       }).addTo(map);
 
-      // Core polyline
+      // Core Solid Polyline (NO DASHES)
       const line = L.polyline(routes.safe.path, {
         color: '#10b981',
-        weight: 5.5,
+        weight: 6,
         opacity: 1.0,
         lineCap: 'round',
         lineJoin: 'round'
@@ -346,21 +298,21 @@ export default function GISMapView({
 
       routeLayersRef.current.push(glow, line);
       boundsPoints.push(...routes.safe.path);
-    } else if (activeRoute === 'direct' && routes.direct && routes.direct.path.length > 0) {
-      // Outer glow for Direct Route
+    } else if (activeRoute === 'direct' && routes.direct && routes.direct.path && routes.direct.path.length > 0) {
+      // Crimson Outer Glow
       const glow = L.polyline(routes.direct.path, {
-        color: '#dc2626',
+        color: '#b91c1c',
         weight: 10,
-        opacity: 0.4,
-        lineCap: 'round'
+        opacity: 0.45,
+        lineCap: 'round',
+        lineJoin: 'round'
       }).addTo(map);
 
-      // Core polyline
+      // Core Solid Red Line (NO DASHES - CONTINUOUS RED LINE AS REQUESTED)
       const line = L.polyline(routes.direct.path, {
         color: '#ef4444',
-        weight: 5.5,
+        weight: 6,
         opacity: 1.0,
-        dashArray: '8, 9',
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map);
@@ -369,50 +321,20 @@ export default function GISMapView({
       boundsPoints.push(...routes.direct.path);
     }
 
-    // Fit map bounds to view both Origin, Destination, and complete route
+    // Smoothly zoom and fit map bounds so user sees origin, destination, road curves, and potholes
     if (boundsPoints.length > 0) {
-      map.fitBounds(boundsPoints, { padding: [50, 50], maxZoom: 16 });
+      map.fitBounds(boundsPoints, { padding: [45, 45], maxZoom: 16 });
     }
   }, [routes, activeRoute, map]);
 
   return (
-    <div className="w-full h-full min-h-[560px] rounded-2xl overflow-hidden relative shadow-2xl border border-slate-800">
-      <div ref={mapContainerRef} className="w-full h-full min-h-[560px]" />
+    <div className="w-full h-full min-h-[580px] rounded-2xl overflow-hidden relative shadow-2xl border border-slate-800">
+      <div ref={mapContainerRef} className="w-full h-full min-h-[580px]" />
 
-      {/* Map Control: Google Satellite View vs Street Map Toggle */}
-      <div className="absolute top-3 left-3 z-[1000] flex items-center bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-800 shadow-xl space-x-1">
-        <button
-          type="button"
-          onClick={() => setMapLayer('satellite')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
-            mapLayer === 'satellite'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-          title="Authentic Google Maps Satellite Hybrid (Real Buildings, Rooftops & Roads)"
-        >
-          <span>🛰️ Satellite View</span>
-          <span className="text-[10px] font-mono px-1 py-0.2 bg-blue-500/30 rounded text-blue-200">Google</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMapLayer('streets')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
-            mapLayer === 'streets'
-              ? 'bg-slate-800 text-white shadow-md'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>🗺️ Street Map</span>
-        </button>
-      </div>
-
-      {/* Map Interactive Hint / Click-to-Pin Badge */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 shadow-lg flex items-center space-x-2 pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-        <span>Click any building or road on the satellite map to set destination</span>
+      {/* Map Interactive Hint / Real-Time Satellite Status Badge */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl flex items-center space-x-2 pointer-events-none">
+        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span>Google Maps Satellite View • Continuous Real Road Navigation</span>
       </div>
     </div>
   );
