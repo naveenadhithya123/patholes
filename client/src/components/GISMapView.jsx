@@ -29,9 +29,9 @@ export default function GISMapView({
         zoomControl: true
       });
 
-      // CartoDB Voyager tiles (clean, Google Maps-like road view)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CARTO | BBMP Smart City GIS',
+      // High-resolution Esri World Street Map (Google Maps-style street view, 100% Free, ZERO API KEY REQUIRED!)
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri, DeLorme, NAVTEQ, TomTom | Smart City GIS',
         maxZoom: 19
       }).addTo(map);
 
