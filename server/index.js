@@ -21,6 +21,7 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 let roadsData = require('./data/roads_dataset.json');
 let climateData = require('./data/climate_dataset.json');
 let defectsData = [...require('./data/defects_seed.json')];
+const subdivisionsData = require('./data/subdivisions.json');
 
 // AI Engine Status Endpoints
 app.get('/api/system/ai-status', (req, res) => {
@@ -65,7 +66,7 @@ function findClimateZoneForLocation(wardNo, zoneName) {
 }
 
 /* ==========================================================================
-   ROLE DEFINITIONS: HEAD ADMIN & AREA HEADS
+   ROLE DEFINITIONS: TOP MUNICIPAL HEAD & 50 SUB-DIVISION AREA HEADS
    ========================================================================== */
 const HEAD_ADMIN = {
   id: 'HEAD-ADMIN-01',
@@ -73,83 +74,10 @@ const HEAD_ADMIN = {
   title: 'Chief Municipal Infrastructure Commissioner',
   email: 'head.admin@bbmp.gov.in',
   role: 'HEAD_ADMIN',
-  agency: 'Bruhat Bengaluru Mahanagara Palike (Central Headquarters)',
-  jurisdiction: 'Greater Bengaluru Metropolitan Area (All 198 Wards)',
+  agency: 'Bruhat Bengaluru Mahanagara Palike (Central Command HQ)',
+  jurisdiction: 'All 5 Corporations & 50 Sub-Divisions (198 Wards)',
   badge: 'CHIEF_COMMISSIONER'
 };
-
-const AREA_HEADS = [
-  {
-    id: 'AREA-HEAD-01',
-    name: 'Er. Suresh Gowda',
-    title: 'Executive Engineer - South Zone',
-    email: 'area.south@bbmp.gov.in',
-    phone: '+91 98450 12041',
-    zone: 'South',
-    wards: [174, 151, 146, 172],
-    ward_names: ['HSR Layout', 'Koramangala', 'Lakkasandra', 'Madivala'],
-    center_coords: { lat: 12.9250, lng: 77.6250 },
-    radius_km: 8.5,
-    role: 'AREA_HEAD',
-    field_crews: ['Ward 174 Rapid Paving Gang #1', 'South Zone Asphalt Unit #2']
-  },
-  {
-    id: 'AREA-HEAD-02',
-    name: 'Er. Deepa Nair',
-    title: 'Executive Engineer - East Zone',
-    email: 'area.east@bbmp.gov.in',
-    phone: '+91 98450 12042',
-    zone: 'East',
-    wards: [80, 52, 88, 112],
-    ward_names: ['Hoysala Nagar', 'KR Puram', 'Marathahalli', 'HAL Airport'],
-    center_coords: { lat: 12.9800, lng: 77.6700 },
-    radius_km: 9.0,
-    role: 'AREA_HEAD',
-    field_crews: ['East Zone Road Maintenance Crew #1', 'KR Puram Flyover Repair Gang']
-  },
-  {
-    id: 'AREA-HEAD-03',
-    name: 'Er. Ananya Sharma',
-    title: 'Executive Engineer - Mahadevapura Zone',
-    email: 'area.mahadevapura@bbmp.gov.in',
-    phone: '+91 98450 12043',
-    zone: 'Mahadevapura',
-    wards: [150, 84, 85, 86],
-    ward_names: ['Bellandur', 'Hagadur (Whitefield)', 'Doddanekkundi'],
-    center_coords: { lat: 12.9550, lng: 77.7100 },
-    radius_km: 11.0,
-    role: 'AREA_HEAD',
-    field_crews: ['Mahadevapura Arterial Squad #1', 'ITPL Corridor Paving Team']
-  },
-  {
-    id: 'AREA-HEAD-04',
-    name: 'Er. Ramesh Patil',
-    title: 'Executive Engineer - Central Zone',
-    email: 'area.central@bbmp.gov.in',
-    phone: '+91 98450 12044',
-    zone: 'Central',
-    wards: [111, 110, 109],
-    ward_names: ['Shanthinagar', 'MG Road Central', 'Sampangiram Nagar'],
-    center_coords: { lat: 12.9720, lng: 77.6000 },
-    radius_km: 6.0,
-    role: 'AREA_HEAD',
-    field_crews: ['Central CBD Patch Unit #1']
-  },
-  {
-    id: 'AREA-HEAD-05',
-    name: 'Er. Vikram Rao',
-    title: 'Executive Engineer - North Zone',
-    email: 'area.north@bbmp.gov.in',
-    phone: '+91 98450 12045',
-    zone: 'North',
-    wards: [7, 6, 8],
-    ward_names: ['Hebbal', 'Thanisandra', 'Kodigehalli', 'Yelahanka'],
-    center_coords: { lat: 13.0350, lng: 77.5950 },
-    radius_km: 10.0,
-    role: 'AREA_HEAD',
-    field_crews: ['North Expressway Rapid Response Team']
-  }
-];
 
 function formatDurationBetween(startIso, endIso) {
   if (!startIso || !endIso) return '18 hours';
@@ -171,35 +99,38 @@ function formatDurationBetween(startIso, endIso) {
   return `${totalMins} min${totalMins > 1 ? 's' : ''}`;
 }
 
-function findClosestAreaHead(lat, lng) {
-  let closest = AREA_HEADS[0];
+// Automatically matches candidate defect GPS coordinates to the closest of the 50 Sub-Divisions!
+function findClosestSubdivision(lat, lng) {
+  let closest = subdivisionsData[0];
   let minDistance = Infinity;
 
-  for (const ah of AREA_HEADS) {
-    const distMeters = calculateHaversineDistance(lat, lng, ah.center_coords.lat, ah.center_coords.lng);
-    const distKm = distMeters / 1000;
-    if (distKm < minDistance) {
-      minDistance = distKm;
-      closest = { ...ah, distanceKm: Math.round(distKm * 10) / 10, isWithinRadius: distKm <= ah.radius_km };
+  for (const subdiv of subdivisionsData) {
+    const distMeters = calculateHaversineDistance(lat, lng, subdiv.center.lat, subdiv.center.lng);
+    if (distMeters < minDistance) {
+      minDistance = distMeters;
+      closest = {
+        ...subdiv,
+        distance_meters: Math.round(distMeters),
+        distance_km: Math.round((distMeters / 1000) * 10) / 10
+      };
     }
   }
   return closest;
 }
 
 /* ==========================================================================
-   AUTH ROUTES (Dedicated Head Admin & Area Head Logins)
+   AUTH ROUTES (Top Head & 50 Sub-Division Area Heads)
    ========================================================================== */
 app.post('/api/auth/login', (req, res) => {
-  const { email = '', password = '', role = '' } = req.body;
+  const { email = '', password = '', role = '', subdivision_id = '' } = req.body;
   const cleanEmail = email.trim().toLowerCase();
 
-  // 1. Check for Head Admin (Top Head)
+  // 1. Check for Top Municipal Head
   if (
     cleanEmail === 'head.admin@bbmp.gov.in' ||
     cleanEmail === 'admin@bbmp.gov.in' ||
     cleanEmail === 'commissioner@bbmp.gov.in' ||
-    role === 'HEAD_ADMIN' ||
-    cleanEmail.includes('head')
+    role === 'HEAD_ADMIN'
   ) {
     if (password === 'admin123' || password === 'head123' || !password) {
       return res.json({
@@ -210,35 +141,57 @@ app.post('/api/auth/login', (req, res) => {
     }
   }
 
-  // 2. Check for Area Heads (Zonal Administrators)
-  const matchedAreaHead = AREA_HEADS.find(ah =>
-    ah.email.toLowerCase() === cleanEmail ||
-    ah.zone.toLowerCase() === (req.body.zone || '').toLowerCase() ||
-    cleanEmail.includes(ah.zone.toLowerCase())
+  // 2. Check for Sub-Division Area Heads (Any of the 50 Sub-Divisions)
+  const matchedSubdiv = subdivisionsData.find(s =>
+    s.email.toLowerCase() === cleanEmail ||
+    s.id.toLowerCase() === subdivision_id.toLowerCase() ||
+    cleanEmail.includes(s.id.toLowerCase())
   );
 
-  if (matchedAreaHead) {
-    if (password === 'admin123' || password === 'area123' || !password) {
+  if (matchedSubdiv) {
+    if (password === 'admin123' || password === 'subdiv123' || !password) {
       return res.json({
         success: true,
-        token: 'jwt-area-head-token-' + Date.now(),
+        token: 'jwt-subdiv-token-' + Date.now(),
         user: {
-          ...matchedAreaHead,
-          role: 'AREA_HEAD',
-          agency: 'BBMP Zonal Engineering Wing'
+          id: matchedSubdiv.id,
+          name: matchedSubdiv.engineer,
+          title: `Head of ${matchedSubdiv.name}`,
+          email: matchedSubdiv.email,
+          subdivision_id: matchedSubdiv.id,
+          subdivision_name: matchedSubdiv.name,
+          corporation: matchedSubdiv.corporation,
+          center: matchedSubdiv.center,
+          radius_km: matchedSubdiv.radius_km,
+          wards: matchedSubdiv.wards,
+          role: 'SUBDIVISION_HEAD',
+          agency: `${matchedSubdiv.corporation} Bangalore Corporation`
         }
       });
     }
   }
 
-  // 3. Fallback generic testing login
+  // 3. Fallback testing login
   if (password === 'admin123') {
-    if (role === 'AREA_HEAD') {
-      const defaultAreaHead = AREA_HEADS[0];
+    if (role === 'SUBDIVISION_HEAD' || role === 'AREA_HEAD') {
+      const defaultSubdiv = subdivisionsData.find(s => s.id === subdivision_id) || subdivisionsData[0];
       return res.json({
         success: true,
-        token: 'jwt-area-head-token-' + Date.now(),
-        user: { ...defaultAreaHead, role: 'AREA_HEAD' }
+        token: 'jwt-subdiv-token-' + Date.now(),
+        user: {
+          id: defaultSubdiv.id,
+          name: defaultSubdiv.engineer,
+          title: `Head of ${defaultSubdiv.name}`,
+          email: defaultSubdiv.email,
+          subdivision_id: defaultSubdiv.id,
+          subdivision_name: defaultSubdiv.name,
+          corporation: defaultSubdiv.corporation,
+          center: defaultSubdiv.center,
+          radius_km: defaultSubdiv.radius_km,
+          wards: defaultSubdiv.wards,
+          role: 'SUBDIVISION_HEAD',
+          agency: `${defaultSubdiv.corporation} Bangalore Corporation`
+        }
       });
     }
     return res.json({
@@ -250,27 +203,80 @@ app.post('/api/auth/login', (req, res) => {
 
   return res.status(401).json({
     success: false,
-    message: 'Invalid credentials. For Head Admin use head.admin@bbmp.gov.in / admin123. For Area Head use area.south@bbmp.gov.in / admin123.'
+    message: 'Invalid credentials. Use head.admin@bbmp.gov.in / admin123 or select your Sub-Division / admin123.'
   });
 });
 
-app.get('/api/area-heads', (req, res) => {
-  const areaHeadsWithStats = AREA_HEADS.map(ah => {
-    const assignedDefects = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.status !== 'Resolved');
-    const resolvedDefects = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.status === 'Resolved');
-    const pendingApproval = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.workflow_stage === 'PENDING_HEAD_APPROVAL');
+// Returns All 50 Sub-Divisions with Real-time Performance Metrics
+app.get('/api/subdivisions', (req, res) => {
+  const { corporation } = req.query;
+
+  let list = subdivisionsData;
+  if (corporation && corporation !== 'all') {
+    list = list.filter(s => s.corporation.toLowerCase() === corporation.toLowerCase());
+  }
+
+  const enriched = list.map(subdiv => {
+    const assignedDefects = defectsData.filter(d => 
+      d.assigned_subdivision?.id === subdiv.id ||
+      d.location?.ward_no && subdiv.wards?.includes(d.location.ward_no)
+    );
+    const solvedDefects = assignedDefects.filter(d => d.status === 'Resolved');
+    const inProgressDefects = assignedDefects.filter(d => d.status === 'In Progress');
+    const pendingDefects = assignedDefects.filter(d => d.status !== 'Resolved');
+
+    const total = assignedDefects.length;
+    const solved = solvedDefects.length;
+    const rate = total > 0 ? Math.round((solved / total) * 100) : 100;
 
     return {
-      ...ah,
-      active_assigned_count: assignedDefects.length,
-      resolved_count: resolvedDefects.length,
-      pending_approval_count: pendingApproval.length
+      ...subdiv,
+      total_assigned: total,
+      pending_count: pendingDefects.length,
+      in_progress_count: inProgressDefects.length,
+      solved_count: solved,
+      resolution_rate_pct: rate
     };
   });
 
   res.json({
     success: true,
-    area_heads: areaHeadsWithStats
+    total_subdivisions: enriched.length,
+    corporations: ['Central', 'East', 'South', 'West', 'North'],
+    subdivisions: enriched
+  });
+});
+
+// Drill-Down into a specific Sub-Division (Used by Top Head to inspect a particular Area Head)
+app.get('/api/subdivisions/:id', (req, res) => {
+  const { id } = req.params;
+  const subdiv = subdivisionsData.find(s => s.id === id);
+
+  if (!subdiv) {
+    return res.status(404).json({ success: false, message: 'Sub-Division not found' });
+  }
+
+  const assignedDefects = defectsData.filter(d => 
+    d.assigned_subdivision?.id === subdiv.id ||
+    d.location?.ward_no && subdiv.wards?.includes(d.location.ward_no)
+  );
+
+  const pending = assignedDefects
+    .filter(d => d.status !== 'Resolved')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const solved = assignedDefects
+    .filter(d => d.status === 'Resolved')
+    .sort((a, b) => new Date(b.resolved_at || b.created_at) - new Date(a.resolved_at || a.created_at));
+
+  res.json({
+    success: true,
+    subdivision: subdiv,
+    total_assigned: assignedDefects.length,
+    pending_count: pending.length,
+    solved_count: solved.length,
+    pending,
+    solved
   });
 });
 
@@ -429,6 +435,7 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
 
   const closestRoad = findClosestRoad(roadsData, candidateLat, candidateLng);
   const climateZone = findClimateZoneForLocation(randomCar.ward_no, null);
+  const autoSubdiv = findClosestSubdivision(candidateLat, candidateLng);
 
   const aiResult = calculateAIPriority({
     type: 'pothole',
@@ -457,7 +464,7 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
       address: `${randomCar.corridor}, Ward ${randomCar.ward_no}`,
       ward_no: randomCar.ward_no,
       ward_name: closestRoad?.ward_name || 'Corridor',
-      zone: closestRoad?.zone || 'Mahadevapura'
+      zone: autoSubdiv.corporation
     },
     road_id: closestRoad?.road_id,
     traffic_congestion_tier: closestRoad?.traffic_congestion_tier || 'CRITICAL',
@@ -478,12 +485,18 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
     },
     image_url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
     created_at: new Date().toISOString(),
-    status: 'Reported (Pending Head Distribution)',
-    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
-    head_admin_forwarded: true,
-    assigned_area_head: null,
+    status: 'Assigned to Sub-Division',
+    workflow_stage: 'ASSIGNED_TO_SUBDIVISION',
+    assigned_subdivision: {
+      id: autoSubdiv.id,
+      name: autoSubdiv.name,
+      corporation: autoSubdiv.corporation,
+      engineer: autoSubdiv.engineer,
+      email: autoSubdiv.email,
+      distance_km: autoSubdiv.distance_km,
+      auto_assigned_at: new Date().toISOString()
+    },
     head_admin_approved: false,
-    assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
   };
@@ -647,6 +660,7 @@ app.post('/api/defects/report', async (req, res) => {
   const nextCodeNum = 1000 + defectsData.length + 1;
   const ticketPrefix = effectiveType === 'pothole' || effectiveType === 'road_crack' ? 'BBMP-RD' : 'BBMP-STR';
   const ticket_code = `${ticketPrefix}-${nextCodeNum}`;
+  const autoSubdiv = findClosestSubdivision(candidateLat, candidateLng);
 
   const newDefect = {
     id: `DEF-2026-${nextCodeNum}`,
@@ -665,8 +679,8 @@ app.post('/api/defects/report', async (req, res) => {
       lng: candidateLng,
       address: location.address || (closestRoad ? `${closestRoad.road_name}, Ward ${closestRoad.ward_no}` : `Ward 150, Bengaluru`),
       ward_no: location.ward_no || closestRoad?.ward_no || 150,
-      ward_name: location.ward_name || closestRoad?.ward_name || 'Bellandur',
-      zone: location.zone || closestRoad?.zone || 'Mahadevapura'
+      ward_name: location.ward_name || closestRoad?.ward_name || autoSubdiv.name,
+      zone: autoSubdiv.corporation
     },
     road_id: closestRoad ? closestRoad.road_id : null,
     traffic_congestion_tier: closestRoad ? closestRoad.traffic_congestion_tier : 'HIGH',
@@ -682,12 +696,18 @@ app.post('/api/defects/report', async (req, res) => {
     vehicle_telemetry: vehicle_telemetry || null,
     image_url: image_data || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
     created_at: new Date().toISOString(),
-    status: 'Reported (Pending Head Distribution)',
-    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
-    head_admin_forwarded: true,
-    assigned_area_head: null,
+    status: 'Assigned to Sub-Division',
+    workflow_stage: 'ASSIGNED_TO_SUBDIVISION',
+    assigned_subdivision: {
+      id: autoSubdiv.id,
+      name: autoSubdiv.name,
+      corporation: autoSubdiv.corporation,
+      engineer: autoSubdiv.engineer,
+      email: autoSubdiv.email,
+      distance_km: autoSubdiv.distance_km,
+      auto_assigned_at: new Date().toISOString()
+    },
     head_admin_approved: false,
-    assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
   };
@@ -744,6 +764,7 @@ app.post('/api/vehicle/telemetry', (req, res) => {
   // New defect detected by vehicle front bumper camera
   const closestRoad = findClosestRoad(roadsData, candidateLat, candidateLng);
   const climateZone = findClimateZoneForLocation(location.ward_no || closestRoad?.ward_no, location.zone || closestRoad?.zone);
+  const autoSubdiv = findClosestSubdivision(candidateLat, candidateLng);
 
   const aiResult = calculateAIPriority({
     type: defect_details.type || 'pothole',
@@ -761,7 +782,7 @@ app.post('/api/vehicle/telemetry', (req, res) => {
     type: defect_details.type || 'pothole',
     category_label: 'Vehicle-Detected Severe Crater',
     title: `Pothole detected by Patrol Car ${vehicle_id} @ ${speed_kmh} km/h`,
-    description: `Automated LiDAR/Bumper camera detection at 5.4 ft distance. High velocity hazard identified on ${closestRoad?.road_name || 'Corridor'}.`,
+    description: `Automated LiDAR/Bumper camera detection at 5.4 ft distance. High velocity hazard identified on ${closestRoad?.road_name || autoSubdiv.name}.`,
     severity: defect_details.severity || 'CRITICAL',
     severity_score: 91,
     confidence_pct: 95.8,
@@ -769,10 +790,10 @@ app.post('/api/vehicle/telemetry', (req, res) => {
     location: {
       lat: candidateLat,
       lng: candidateLng,
-      address: closestRoad ? `${closestRoad.road_name}, Ward ${closestRoad.ward_no}` : 'Outer Ring Road, Bengaluru',
-      ward_no: closestRoad?.ward_no || 150,
-      ward_name: closestRoad?.ward_name || 'Bellandur',
-      zone: closestRoad?.zone || 'Mahadevapura'
+      address: closestRoad ? `${closestRoad.road_name}, Ward ${closestRoad.ward_no}` : `${autoSubdiv.name}, Bengaluru`,
+      ward_no: closestRoad?.ward_no || (autoSubdiv.wards && autoSubdiv.wards[0]) || 150,
+      ward_name: closestRoad?.ward_name || autoSubdiv.name,
+      zone: autoSubdiv.corporation
     },
     road_id: closestRoad?.road_id,
     traffic_congestion_tier: closestRoad?.traffic_congestion_tier || 'CRITICAL',
@@ -790,14 +811,20 @@ app.post('/api/vehicle/telemetry', (req, res) => {
       lidar_distance_ft,
       sensor_confidence: 0.95
     },
-    image_url: defect_details.image_url || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    image_url: defect_details.image_url || '/images/pothole_before.jpg',
     created_at: new Date().toISOString(),
-    status: 'Reported (Pending Head Distribution)',
-    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
-    head_admin_forwarded: true,
-    assigned_area_head: null,
+    status: 'Assigned to Sub-Division',
+    workflow_stage: 'ASSIGNED_TO_SUBDIVISION',
+    assigned_subdivision: {
+      id: autoSubdiv.id,
+      name: autoSubdiv.name,
+      corporation: autoSubdiv.corporation,
+      engineer: autoSubdiv.engineer,
+      email: autoSubdiv.email,
+      distance_km: autoSubdiv.distance_km,
+      auto_assigned_at: new Date().toISOString()
+    },
     head_admin_approved: false,
-    assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
   };
@@ -807,7 +834,7 @@ app.post('/api/vehicle/telemetry', (req, res) => {
   res.status(201).json({
     success: true,
     action: 'NEW_DEFECT_DISPATCHED',
-    message: `New pothole logged by vehicle ${vehicle_id}. Auto-assigned Priority: ${newDefect.ai_calculated_priority}. Ticket #${newDefect.ticket_code}`,
+    message: `New pothole logged by vehicle ${vehicle_id}. Auto-assigned to ${autoSubdiv.name}. Ticket #${newDefect.ticket_code}`,
     ticket_code: newDefect.ticket_code,
     defect: newDefect
   });
@@ -840,44 +867,70 @@ app.patch('/api/defects/:id', (req, res) => {
    WORKFLOW ROUTES: HEAD ADMIN DISTRIBUTION & AREA HEAD REPAIR VERIFICATION
    ========================================================================== */
 
-// Head Admin Distributes Problem to Area Head
-app.post('/api/defects/:id/assign-area-head', (req, res) => {
+// Head Admin or System Assigns/Reassigns Defect to a Sub-Division
+app.post('/api/defects/:id/assign-subdivision', (req, res) => {
   const { id } = req.params;
-  const { area_head_id, area_head_name, zone, notes, target_sla_hours } = req.body;
+  const { subdivision_id, notes } = req.body;
 
   const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
   if (!defect) {
     return res.status(404).json({ success: false, message: 'Defect ticket not found' });
   }
 
-  const selectedAreaHead = AREA_HEADS.find(ah => ah.id === area_head_id) || {
-    id: area_head_id || 'AREA-HEAD-01',
-    name: area_head_name || 'Zonal Area Head',
-    zone: zone || defect.location?.zone || 'South'
+  const subdiv = subdivisionsData.find(s => s.id === subdivision_id) || subdivisionsData[0];
+  defect.assigned_subdivision = {
+    id: subdiv.id,
+    name: subdiv.name,
+    corporation: subdiv.corporation,
+    engineer: subdiv.engineer,
+    email: subdiv.email,
+    distance_km: 0.5,
+    auto_assigned_at: new Date().toISOString(),
+    notes: notes || 'Assigned by Municipal Head Command'
   };
 
-  defect.assigned_area_head = {
-    id: selectedAreaHead.id,
-    name: selectedAreaHead.name,
-    title: selectedAreaHead.title || `Executive Engineer - ${selectedAreaHead.zone} Zone`,
-    email: selectedAreaHead.email,
-    zone: selectedAreaHead.zone,
-    assigned_at: new Date().toISOString(),
-    distribution_notes: notes || 'Assigned by Head Admin based on territorial radius.',
-    target_sla_hours: target_sla_hours || defect.target_sla_hours || 24
-  };
-
-  defect.status = 'Assigned to Area Head';
-  defect.workflow_stage = 'ASSIGNED_TO_AREA_HEAD';
+  defect.status = 'Assigned to Sub-Division';
+  defect.workflow_stage = 'ASSIGNED_TO_SUBDIVISION';
 
   res.json({
     success: true,
-    message: `Ticket #${defect.ticket_code} successfully distributed to Area Head ${defect.assigned_area_head.name} (${defect.assigned_area_head.zone} Zone).`,
+    message: `Ticket #${defect.ticket_code} assigned to ${subdiv.name} (${subdiv.corporation} Corporation).`,
     defect
   });
 });
 
-// Area Head Starts Work (Dispatches Workers)
+// Backward compatibility for assign-area-head
+app.post('/api/defects/:id/assign-area-head', (req, res) => {
+  const { id } = req.params;
+  const { area_head_id, subdivision_id } = req.body;
+  const targetId = subdivision_id || area_head_id;
+  const subdiv = subdivisionsData.find(s => s.id === targetId || s.corporation.toLowerCase() === (targetId || '').toLowerCase()) || subdivisionsData[0];
+  
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  defect.assigned_subdivision = {
+    id: subdiv.id,
+    name: subdiv.name,
+    corporation: subdiv.corporation,
+    engineer: subdiv.engineer,
+    email: subdiv.email,
+    distance_km: 0.5,
+    auto_assigned_at: new Date().toISOString()
+  };
+  defect.status = 'Assigned to Sub-Division';
+  defect.workflow_stage = 'ASSIGNED_TO_SUBDIVISION';
+
+  res.json({
+    success: true,
+    message: `Ticket #${defect.ticket_code} assigned to ${subdiv.name}.`,
+    defect
+  });
+});
+
+// Sub-Division Area Head Starts Work (Dispatches Crew)
 app.post('/api/defects/:id/start-repair', (req, res) => {
   const { id } = req.params;
   const { field_crew } = req.body;
@@ -889,7 +942,7 @@ app.post('/api/defects/:id/start-repair', (req, res) => {
 
   defect.status = 'In Progress';
   defect.workflow_stage = 'IN_PROGRESS';
-  defect.field_crew = field_crew || (defect.assigned_area_head ? `${defect.assigned_area_head.zone} Zone Rapid Paving Unit #1` : 'Municipal Field Crew');
+  defect.field_crew = field_crew || (defect.assigned_subdivision ? `${defect.assigned_subdivision.name} Rapid Paving Gang #1` : 'Municipal Field Crew');
   defect.repair_started_at = new Date().toISOString();
 
   res.json({
@@ -899,12 +952,12 @@ app.post('/api/defects/:id/start-repair', (req, res) => {
   });
 });
 
-// Area Head Completes Repair & Submits After Photo to Head Admin
+// Sub-Division Area Head Completes Repair & Submits After Photo
 app.post('/api/defects/:id/submit-completion', (req, res) => {
   const { id } = req.params;
   const {
-    after_image_url = 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80',
-    completed_by_workers = 'Zonal Rapid Asphalt Paving Gang',
+    after_image_url = '/images/pothole_after.jpg',
+    completed_by_workers = 'Sub-Division Rapid Asphalt Paving Gang',
     repair_notes = 'Pothole excavated, tack coated, packed with dense bituminous macadam and vibratory roller leveled.'
   } = req.body;
 
@@ -924,18 +977,20 @@ app.post('/api/defects/:id/submit-completion', (req, res) => {
     duration_str: durationStr
   };
 
-  defect.status = 'Pending Head Approval';
-  defect.workflow_stage = 'PENDING_HEAD_APPROVAL';
-  defect.head_admin_approved = false;
+  defect.status = 'Resolved';
+  defect.workflow_stage = 'RESOLVED';
+  defect.head_admin_approved = true;
+  defect.resolved_at = completedAt;
+  defect.duration_took_str = durationStr;
 
   res.json({
     success: true,
-    message: `Repair completed and After photo transmitted to Head Admin for Ticket #${defect.ticket_code}. Awaiting final authorization.`,
+    message: `Repair completed and verified for Ticket #${defect.ticket_code}. Turnaround duration: ${durationStr}. Marked as Resolved & Published.`,
     defect
   });
 });
 
-// Head Admin Verifies Before/After Evidence & Approves for Public Release
+// Top Head Approves Completion (if pending)
 app.post('/api/defects/:id/approve-completion', (req, res) => {
   const { id } = req.params;
   const { remarks = 'Surface leveling & Before/After photos verified. Approved for public traffic.' } = req.body;
@@ -962,12 +1017,12 @@ app.post('/api/defects/:id/approve-completion', (req, res) => {
 
   res.json({
     success: true,
-    message: `Ticket #${defect.ticket_code} officially approved by Chief Infrastructure Head. It is now published to the Public Civic Issues Tracker for citizens to view!`,
+    message: `Ticket #${defect.ticket_code} officially approved by Chief Infrastructure Head. Published to Civic Issues Tracker!`,
     defect
   });
 });
 
-// Head Admin Rejects Completion (Sends back to Area Head with rework notes)
+// Top Head Rejects Completion (Sends back to Sub-Division with rework notes)
 app.post('/api/defects/:id/reject-completion', (req, res) => {
   const { id } = req.params;
   const { remarks = 'Re-work required: Surface compaction uneven or incomplete.' } = req.body;
@@ -977,15 +1032,79 @@ app.post('/api/defects/:id/reject-completion', (req, res) => {
     return res.status(404).json({ success: false, message: 'Defect ticket not found' });
   }
 
-  defect.status = 'Assigned to Area Head (Re-work Required)';
-  defect.workflow_stage = 'ASSIGNED_TO_AREA_HEAD';
+  defect.status = 'In Progress';
+  defect.workflow_stage = 'IN_PROGRESS';
   defect.rework_notes = remarks;
   defect.head_admin_approved = false;
 
   res.json({
     success: true,
-    message: `Ticket #${defect.ticket_code} returned to Area Head for re-work.`,
+    message: `Ticket #${defect.ticket_code} returned to Sub-Division for re-work.`,
     defect
+  });
+});
+
+// Simulate an incident directly in a specific Sub-Division (for 1-click test simulation!)
+app.post('/api/subdivisions/:id/simulate-defect', (req, res) => {
+  const { id } = req.params;
+  const subdiv = subdivisionsData.find(s => s.id === id);
+  if (!subdiv) {
+    return res.status(404).json({ success: false, message: 'Sub-Division not found' });
+  }
+
+  const jitterLat = subdiv.center.lat + (Math.random() - 0.5) * 0.005;
+  const jitterLng = subdiv.center.lng + (Math.random() - 0.5) * 0.005;
+  const nextCodeNum = 1000 + defectsData.length + 1;
+
+  const simulatedDefect = {
+    id: `DEF-2026-${nextCodeNum}`,
+    ticket_code: `BBMP-RD-${nextCodeNum}`,
+    type: 'pothole',
+    category_label: 'Severe Road Pothole',
+    title: `Pothole detected near ${subdiv.name}`,
+    description: `Hazardous crater ~12cm deep detected on main road corridor under ${subdiv.name} jurisdiction. Auto-assigned to ${subdiv.engineer}.`,
+    severity: 'CRITICAL',
+    severity_score: 88,
+    confidence_pct: 95.5,
+    dimensions: { width_cm: 55, length_cm: 65, depth_cm: 12 },
+    location: {
+      lat: jitterLat,
+      lng: jitterLng,
+      address: `${subdiv.name} Main Road Corridor`,
+      ward_no: (subdiv.wards && subdiv.wards[0]) || 150,
+      ward_name: subdiv.name,
+      zone: subdiv.corporation
+    },
+    ai_calculated_priority: 'P1_IMMEDIATE',
+    ai_priority_score: 92,
+    target_sla_hours: 24,
+    ai_reasoning: `Auto-routed to ${subdiv.name} (${subdiv.corporation} Corporation) via GPS coordinate proximity.`,
+    reported_by: 'citizen_manual_camera',
+    image_url: '/images/pothole_before.jpg',
+    created_at: new Date().toISOString(),
+    status: 'Assigned to Sub-Division',
+    workflow_stage: 'ASSIGNED_TO_SUBDIVISION',
+    assigned_subdivision: {
+      id: subdiv.id,
+      name: subdiv.name,
+      corporation: subdiv.corporation,
+      engineer: subdiv.engineer,
+      email: subdiv.email,
+      distance_km: 0.8,
+      auto_assigned_at: new Date().toISOString()
+    },
+    head_admin_approved: false,
+    verification_count: 1,
+    duplicates_prevented: 0
+  };
+
+  defectsData.unshift(simulatedDefect);
+
+  res.status(201).json({
+    success: true,
+    message: `Simulated defect auto-assigned to ${subdiv.name}! Ticket #${simulatedDefect.ticket_code}`,
+    ticket_code: simulatedDefect.ticket_code,
+    defect: simulatedDefect
   });
 });
 
@@ -999,7 +1118,8 @@ app.get('/api/defects/public-tracker', (req, res) => {
   if (zone && zone !== 'all') {
     allDefects = allDefects.filter(d =>
       (d.location?.zone || '').toLowerCase() === zone.toLowerCase() ||
-      (d.assigned_area_head?.zone || '').toLowerCase() === zone.toLowerCase()
+      (d.assigned_subdivision?.corporation || '').toLowerCase() === zone.toLowerCase() ||
+      (d.assigned_subdivision?.name || '').toLowerCase().includes(zone.toLowerCase())
     );
   }
 

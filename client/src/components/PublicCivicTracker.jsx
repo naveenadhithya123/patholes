@@ -71,12 +71,12 @@ export default function PublicCivicTracker({ onBack, onSelectView }) {
   const currentList = activeTab === 'pending' ? pendingDefects : completedDefects;
 
   const zonesList = [
-    { id: 'all', name: 'All Zones (Entire Metro)' },
-    { id: 'South', name: 'South Zone (HSR, Silk Board, Koramangala)' },
-    { id: 'East', name: 'East Zone (Indiranagar, KR Puram)' },
-    { id: 'Mahadevapura', name: 'Mahadevapura (Bellandur, Whitefield)' },
-    { id: 'Central', name: 'Central Zone (MG Road, Shanthinagar)' },
-    { id: 'North', name: 'North Zone (Hebbal, Yelahanka)' }
+    { id: 'all', name: 'All 5 Corporations' },
+    { id: 'Central', name: 'Central Corporation' },
+    { id: 'East', name: 'East Corporation' },
+    { id: 'South', name: 'South Corporation' },
+    { id: 'West', name: 'West Corporation' },
+    { id: 'North', name: 'North Corporation' }
   ];
 
   const severitiesList = [

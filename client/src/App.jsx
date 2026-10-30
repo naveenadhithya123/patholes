@@ -177,12 +177,14 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Infra AI Platform • Urban Infrastructure Monitoring & Road Safety System</span>
+            <span>Infra AI Platform • Greater Bengaluru Road Defect Resolution & Safety System</span>
           </div>
-          <div className="flex items-center space-x-4">
-            <span>SDG 9: Resilient Infrastructure</span>
+          <div className="flex items-center space-x-4 text-slate-400">
+            <span>5 Corporations</span>
             <span>•</span>
-            <span>SDG 11: Sustainable Smart Cities</span>
+            <span>50 Sub-Divisions</span>
+            <span>•</span>
+            <span>198 Wards</span>
           </div>
         </div>
       </footer>

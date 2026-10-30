@@ -33,12 +33,10 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
             </div>
           </div>
 
-          {/* SDG Badge - SDGs 9 & 11 */}
-          <div className="hidden xl:flex items-center space-x-2 text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
-            <Award className="w-4 h-4 text-emerald-400" />
-            <span className="text-slate-300">
-              <strong className="text-emerald-400">SDG 9</strong> Resilient Infra | <strong className="text-amber-400">SDG 11</strong> Smart Cities
-            </span>
+          {/* Civic Badge */}
+          <div className="hidden md:flex items-center space-x-2 text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Bengaluru Road Safety & Pothole Resolution Network</span>
           </div>
 
           {/* Navigation Controls */}

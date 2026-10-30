@@ -1,0 +1,502 @@
+[
+  {
+    "id": "subdiv-central-01",
+    "name": "MG Road / CBD Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Rajesh Patil",
+    "email": "subdiv.mgroad@bbmp.gov.in",
+    "center": { "lat": 12.9749, "lng": 77.6085 },
+    "radius_km": 3.0,
+    "wards": [111, 110]
+  },
+  {
+    "id": "subdiv-central-02",
+    "name": "Shanthinagar Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. P. Venkatesh",
+    "email": "subdiv.shanthinagar@bbmp.gov.in",
+    "center": { "lat": 12.9602, "lng": 77.5958 },
+    "radius_km": 2.8,
+    "wards": [112, 113]
+  },
+  {
+    "id": "subdiv-central-03",
+    "name": "Shivajinagar Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Farooq Ahmed",
+    "email": "subdiv.shivajinagar@bbmp.gov.in",
+    "center": { "lat": 12.9856, "lng": 77.6057 },
+    "radius_km": 3.2,
+    "wards": [91, 92]
+  },
+  {
+    "id": "subdiv-central-04",
+    "name": "Chickpet Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Mohan Kumar",
+    "email": "subdiv.chickpet@bbmp.gov.in",
+    "center": { "lat": 12.9698, "lng": 77.5784 },
+    "radius_km": 2.5,
+    "wards": [119, 120]
+  },
+  {
+    "id": "subdiv-central-05",
+    "name": "Sampangiram Nagar Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Geetha Rao",
+    "email": "subdiv.sampangiram@bbmp.gov.in",
+    "center": { "lat": 12.9682, "lng": 77.5901 },
+    "radius_km": 2.6,
+    "wards": [109, 114]
+  },
+  {
+    "id": "subdiv-central-06",
+    "name": "Gandhi Nagar Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Srinivas Murthy",
+    "email": "subdiv.gandhinagar@bbmp.gov.in",
+    "center": { "lat": 12.9785, "lng": 77.5810 },
+    "radius_km": 2.7,
+    "wards": [94, 95]
+  },
+  {
+    "id": "subdiv-central-07",
+    "name": "Vasanth Nagar Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Anand Swamy",
+    "email": "subdiv.vasanthnagar@bbmp.gov.in",
+    "center": { "lat": 12.9912, "lng": 77.5925 },
+    "radius_km": 2.9,
+    "wards": [93, 77]
+  },
+  {
+    "id": "subdiv-central-08",
+    "name": "Ulsoor Sub-Division",
+    "corporation": "Central",
+    "engineer": "Er. Manjula Devi",
+    "email": "subdiv.ulsoor@bbmp.gov.in",
+    "center": { "lat": 12.9818, "lng": 77.6253 },
+    "radius_km": 3.1,
+    "wards": [90, 89]
+  },
+  {
+    "id": "subdiv-east-01",
+    "name": "Indiranagar Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Deepa Nair",
+    "email": "subdiv.indiranagar@bbmp.gov.in",
+    "center": { "lat": 12.9721, "lng": 77.6415 },
+    "radius_km": 3.5,
+    "wards": [80, 81]
+  },
+  {
+    "id": "subdiv-east-02",
+    "name": "KR Puram Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Ramesh Gowda",
+    "email": "subdiv.krpuram@bbmp.gov.in",
+    "center": { "lat": 12.9995, "lng": 77.6948 },
+    "radius_km": 4.5,
+    "wards": [52, 53]
+  },
+  {
+    "id": "subdiv-east-03",
+    "name": "Hoysala Nagar Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Vinay Kumar",
+    "email": "subdiv.hoysalanagar@bbmp.gov.in",
+    "center": { "lat": 12.9754, "lng": 77.6521 },
+    "radius_km": 3.2,
+    "wards": [79, 82]
+  },
+  {
+    "id": "subdiv-east-04",
+    "name": "CV Raman Nagar Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Priya Kulkarni",
+    "email": "subdiv.cvramannagar@bbmp.gov.in",
+    "center": { "lat": 12.9851, "lng": 77.6632 },
+    "radius_km": 3.6,
+    "wards": [57, 58]
+  },
+  {
+    "id": "subdiv-east-05",
+    "name": "Marathahalli Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Naveen Chand",
+    "email": "subdiv.marathahalli@bbmp.gov.in",
+    "center": { "lat": 12.9542, "lng": 77.7011 },
+    "radius_km": 4.2,
+    "wards": [85, 87]
+  },
+  {
+    "id": "subdiv-east-06",
+    "name": "HAL Airport Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Sunita Hegde",
+    "email": "subdiv.hal@bbmp.gov.in",
+    "center": { "lat": 12.9601, "lng": 77.6534 },
+    "radius_km": 3.8,
+    "wards": [88, 112]
+  },
+  {
+    "id": "subdiv-east-07",
+    "name": "Ramamurthy Nagar Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Prakash Babu",
+    "email": "subdiv.ramamurthynagar@bbmp.gov.in",
+    "center": { "lat": 13.0163, "lng": 77.6775 },
+    "radius_km": 4.0,
+    "wards": [26, 27]
+  },
+  {
+    "id": "subdiv-east-08",
+    "name": "Mahadevapura Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Ananya Sharma",
+    "email": "subdiv.mahadevapura@bbmp.gov.in",
+    "center": { "lat": 12.9925, "lng": 77.7081 },
+    "radius_km": 4.8,
+    "wards": [83, 86]
+  },
+  {
+    "id": "subdiv-east-09",
+    "name": "Varthur Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Harish Reddy",
+    "email": "subdiv.varthur@bbmp.gov.in",
+    "center": { "lat": 12.9388, "lng": 77.7462 },
+    "radius_km": 5.0,
+    "wards": [149, 150]
+  },
+  {
+    "id": "subdiv-east-10",
+    "name": "Whitefield Sub-Division",
+    "corporation": "East",
+    "engineer": "Er. Sandeep Joshi",
+    "email": "subdiv.whitefield@bbmp.gov.in",
+    "center": { "lat": 12.9832, "lng": 77.7441 },
+    "radius_km": 4.6,
+    "wards": [84, 85]
+  },
+  {
+    "id": "subdiv-south-01",
+    "name": "Koramangala Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Ajay Prasad",
+    "email": "subdiv.koramangala@bbmp.gov.in",
+    "center": { "lat": 12.9344, "lng": 77.6225 },
+    "radius_km": 3.4,
+    "wards": [151, 147]
+  },
+  {
+    "id": "subdiv-south-02",
+    "name": "HSR Layout Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. K. Suresh Gowda",
+    "email": "subdiv.hsr@bbmp.gov.in",
+    "center": { "lat": 12.9177, "lng": 77.6238 },
+    "radius_km": 3.8,
+    "wards": [174, 175]
+  },
+  {
+    "id": "subdiv-south-03",
+    "name": "Silk Board & Madiwala Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Chandrashekar",
+    "email": "subdiv.silkboard@bbmp.gov.in",
+    "center": { "lat": 12.9189, "lng": 77.6180 },
+    "radius_km": 3.0,
+    "wards": [172, 173]
+  },
+  {
+    "id": "subdiv-south-04",
+    "name": "Jayanagar Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Radhika Sharma",
+    "email": "subdiv.jayanagar@bbmp.gov.in",
+    "center": { "lat": 12.9298, "lng": 77.5835 },
+    "radius_km": 3.3,
+    "wards": [153, 169]
+  },
+  {
+    "id": "subdiv-south-05",
+    "name": "JP Nagar Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Lokesh Babu",
+    "email": "subdiv.jpnagar@bbmp.gov.in",
+    "center": { "lat": 12.9063, "lng": 77.5857 },
+    "radius_km": 3.6,
+    "wards": [177, 178]
+  },
+  {
+    "id": "subdiv-south-06",
+    "name": "BTM Layout Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Divya Bharathi",
+    "email": "subdiv.btmlayout@bbmp.gov.in",
+    "center": { "lat": 12.9166, "lng": 77.6101 },
+    "radius_km": 3.2,
+    "wards": [176, 173]
+  },
+  {
+    "id": "subdiv-south-07",
+    "name": "Bannerghatta Road Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Shivananda Patil",
+    "email": "subdiv.bannerghatta@bbmp.gov.in",
+    "center": { "lat": 12.8912, "lng": 77.5971 },
+    "radius_km": 4.5,
+    "wards": [193, 194]
+  },
+  {
+    "id": "subdiv-south-08",
+    "name": "Basavanagudi Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Girish Kumar",
+    "email": "subdiv.basavanagudi@bbmp.gov.in",
+    "center": { "lat": 12.9419, "lng": 77.5752 },
+    "radius_km": 3.1,
+    "wards": [154, 155]
+  },
+  {
+    "id": "subdiv-south-09",
+    "name": "Padmanabhanagar Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Kavitha Reddy",
+    "email": "subdiv.padmanabhanagar@bbmp.gov.in",
+    "center": { "lat": 12.9181, "lng": 77.5576 },
+    "radius_km": 3.4,
+    "wards": [181, 182]
+  },
+  {
+    "id": "subdiv-south-10",
+    "name": "Banashankari Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Venkatesh Murthy",
+    "email": "subdiv.banashankari@bbmp.gov.in",
+    "center": { "lat": 12.9254, "lng": 77.5468 },
+    "radius_km": 3.9,
+    "wards": [180, 179]
+  },
+  {
+    "id": "subdiv-south-11",
+    "name": "Bommanahalli Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Ravi Kiran",
+    "email": "subdiv.bommanahalli@bbmp.gov.in",
+    "center": { "lat": 12.9029, "lng": 77.6242 },
+    "radius_km": 4.2,
+    "wards": [175, 186]
+  },
+  {
+    "id": "subdiv-south-12",
+    "name": "Electronic City Sub-Division",
+    "corporation": "South",
+    "engineer": "Er. Manjunath Swamy",
+    "email": "subdiv.ecity@bbmp.gov.in",
+    "center": { "lat": 12.8452, "lng": 77.6602 },
+    "radius_km": 5.5,
+    "wards": [198, 197]
+  },
+  {
+    "id": "subdiv-west-01",
+    "name": "Malleshwaram Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Sudheer Nayak",
+    "email": "subdiv.malleshwaram@bbmp.gov.in",
+    "center": { "lat": 13.0031, "lng": 77.5694 },
+    "radius_km": 3.2,
+    "wards": [65, 66]
+  },
+  {
+    "id": "subdiv-west-02",
+    "name": "Rajajinagar Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Rohini Prasad",
+    "email": "subdiv.rajajinagar@bbmp.gov.in",
+    "center": { "lat": 12.9915, "lng": 77.5528 },
+    "radius_km": 3.4,
+    "wards": [99, 100]
+  },
+  {
+    "id": "subdiv-west-03",
+    "name": "Vijayanagar Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Shashidhar Hegde",
+    "email": "subdiv.vijayanagar@bbmp.gov.in",
+    "center": { "lat": 12.9638, "lng": 77.5385 },
+    "radius_km": 3.6,
+    "wards": [123, 124]
+  },
+  {
+    "id": "subdiv-west-04",
+    "name": "Basaveshwaranagar Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Rekha Shenoy",
+    "email": "subdiv.basaveshwaranagar@bbmp.gov.in",
+    "center": { "lat": 12.9878, "lng": 77.5398 },
+    "radius_km": 3.3,
+    "wards": [101, 102]
+  },
+  {
+    "id": "subdiv-west-05",
+    "name": "Yeshwanthpur Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Vijay Bhaskar",
+    "email": "subdiv.yeshwanthpur@bbmp.gov.in",
+    "center": { "lat": 13.0238, "lng": 77.5529 },
+    "radius_km": 4.0,
+    "wards": [37, 38]
+  },
+  {
+    "id": "subdiv-west-06",
+    "name": "Mahalakshmi Layout Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Shobha Rani",
+    "email": "subdiv.mahalakshmi@bbmp.gov.in",
+    "center": { "lat": 13.0152, "lng": 77.5412 },
+    "radius_km": 3.5,
+    "wards": [68, 69]
+  },
+  {
+    "id": "subdiv-west-07",
+    "name": "Binnypet Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Kiran Kumar",
+    "email": "subdiv.binnypet@bbmp.gov.in",
+    "center": { "lat": 12.9664, "lng": 77.5582 },
+    "radius_km": 2.8,
+    "wards": [121, 122]
+  },
+  {
+    "id": "subdiv-west-08",
+    "name": "Chandra Layout Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Deepak Gowda",
+    "email": "subdiv.chandralayout@bbmp.gov.in",
+    "center": { "lat": 12.9572, "lng": 77.5245 },
+    "radius_km": 3.7,
+    "wards": [129, 130]
+  },
+  {
+    "id": "subdiv-west-09",
+    "name": "Kengeri Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Shivakumar Patil",
+    "email": "subdiv.kengeri@bbmp.gov.in",
+    "center": { "lat": 12.9081, "lng": 77.4852 },
+    "radius_km": 5.2,
+    "wards": [159, 160]
+  },
+  {
+    "id": "subdiv-west-10",
+    "name": "Govindraj Nagar Sub-Division",
+    "corporation": "West",
+    "engineer": "Er. Aruna Kumari",
+    "email": "subdiv.govindrajnagar@bbmp.gov.in",
+    "center": { "lat": 12.9751, "lng": 77.5312 },
+    "radius_km": 3.2,
+    "wards": [104, 105]
+  },
+  {
+    "id": "subdiv-north-01",
+    "name": "Hebbal Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Vikram Rao",
+    "email": "subdiv.hebbal@bbmp.gov.in",
+    "center": { "lat": 13.0362, "lng": 77.5968 },
+    "radius_km": 4.1,
+    "wards": [7, 21]
+  },
+  {
+    "id": "subdiv-north-02",
+    "name": "Yelahanka Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Satish Chandra",
+    "email": "subdiv.yelahanka@bbmp.gov.in",
+    "center": { "lat": 13.1007, "lng": 77.5963 },
+    "radius_km": 5.4,
+    "wards": [1, 2]
+  },
+  {
+    "id": "subdiv-north-03",
+    "name": "Byatarayanapura Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Manjunath Reddy",
+    "email": "subdiv.byatarayanapura@bbmp.gov.in",
+    "center": { "lat": 13.0612, "lng": 77.5912 },
+    "radius_km": 4.3,
+    "wards": [6, 8]
+  },
+  {
+    "id": "subdiv-north-04",
+    "name": "Thanisandra Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Swathi Prabhu",
+    "email": "subdiv.thanisandra@bbmp.gov.in",
+    "center": { "lat": 13.0543, "lng": 77.6315 },
+    "radius_km": 4.6,
+    "wards": [9, 10]
+  },
+  {
+    "id": "subdiv-north-05",
+    "name": "Vidyaranyapura Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Hariprasad Rao",
+    "email": "subdiv.vidyaranyapura@bbmp.gov.in",
+    "center": { "lat": 13.0789, "lng": 77.5612 },
+    "radius_km": 4.5,
+    "wards": [11, 12]
+  },
+  {
+    "id": "subdiv-north-06",
+    "name": "Kodigehalli Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Suma Narayan",
+    "email": "subdiv.kodigehalli@bbmp.gov.in",
+    "center": { "lat": 13.0512, "lng": 77.5756 },
+    "radius_km": 3.8,
+    "wards": [13, 14]
+  },
+  {
+    "id": "subdiv-north-07",
+    "name": "Sahakar Nagar Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Prashanth Kumar",
+    "email": "subdiv.sahakarnagar@bbmp.gov.in",
+    "center": { "lat": 13.0628, "lng": 77.5841 },
+    "radius_km": 3.6,
+    "wards": [15, 16]
+  },
+  {
+    "id": "subdiv-north-08",
+    "name": "Peenya Industrial Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Raghuveer Singh",
+    "email": "subdiv.peenya@bbmp.gov.in",
+    "center": { "lat": 13.0312, "lng": 77.5254 },
+    "radius_km": 4.8,
+    "wards": [41, 42]
+  },
+  {
+    "id": "subdiv-north-09",
+    "name": "Dasarahalli Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Leelavathi",
+    "email": "subdiv.dasarahalli@bbmp.gov.in",
+    "center": { "lat": 13.0456, "lng": 77.5132 },
+    "radius_km": 4.4,
+    "wards": [39, 40]
+  },
+  {
+    "id": "subdiv-north-10",
+    "name": "Jalahalli Sub-Division",
+    "corporation": "North",
+    "engineer": "Er. Anand Kulkarni",
+    "email": "subdiv.jalahalli@bbmp.gov.in",
+    "center": { "lat": 13.0519, "lng": 77.5451 },
+    "radius_km": 4.0,
+    "wards": [17, 18]
+  }
+]

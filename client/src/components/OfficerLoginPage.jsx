@@ -9,80 +9,57 @@ import {
   Briefcase, 
   Compass, 
   Users, 
-  Award,
-  Layers,
-  Sparkles,
-  KeyRound,
-  Copy,
-  Check
+  Layers, 
+  Sparkles, 
+  KeyRound, 
+  Copy, 
+  Check,
+  Building2,
+  HardHat,
+  ChevronRight,
+  Search
 } from 'lucide-react';
+import allSubdivisions from '../data/subdivisions.json';
 
 export default function OfficerLoginPage({ onLogin, onCancel }) {
-  // Active Role Switcher: 'head_admin' (Top Head) | 'area_head' (Zonal / Ward Engineer)
+  // Active Role Switcher: 'head_admin' (Top Municipal Head) | 'subdiv_head' (Sub-Division Area Head)
   const [selectedRole, setSelectedRole] = useState('head_admin');
 
   // Head Admin credentials (pre-filled by default for instant ease!)
   const [headEmail, setHeadEmail] = useState('head.admin@bbmp.gov.in');
   const [headPassword, setHeadPassword] = useState('admin123');
 
-  // Area Head credentials (pre-filled by default for instant ease!)
-  const [selectedZone, setSelectedZone] = useState('South');
-  const [areaEmail, setAreaEmail] = useState('area.south@bbmp.gov.in');
+  // 5 Corporations & 50 Sub-Divisions State
+  const CORPORATIONS = ['All', 'Central', 'East', 'South', 'West', 'North'];
+  const [selectedCorporation, setSelectedCorporation] = useState('South');
+  const [subdivSearch, setSubdivSearch] = useState('');
+
+  // Default to HSR Layout Sub-Division in South Corporation
+  const defaultSubdiv = allSubdivisions.find(s => s.id === 'subdiv-south-02') || allSubdivisions[0];
+  const [selectedSubdiv, setSelectedSubdiv] = useState(defaultSubdiv);
+  const [areaEmail, setAreaEmail] = useState(defaultSubdiv.email);
   const [areaPassword, setAreaPassword] = useState('admin123');
 
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
 
-  const AREA_ZONES = [
-    {
-      id: 'South',
-      name: 'South Zone (HSR Layout, Silk Board, Koramangala)',
-      engineer: 'Er. Suresh Gowda',
-      email: 'area.south@bbmp.gov.in',
-      radius: '8.5 km radius',
-      wards: 'Wards 174, 151, 146'
-    },
-    {
-      id: 'East',
-      name: 'East Zone (Indiranagar, KR Puram, Hoysala Nagar)',
-      engineer: 'Er. Deepa Nair',
-      email: 'area.east@bbmp.gov.in',
-      radius: '9.0 km radius',
-      wards: 'Wards 80, 52, 88'
-    },
-    {
-      id: 'Mahadevapura',
-      name: 'Mahadevapura (Bellandur, Whitefield, ITPL)',
-      engineer: 'Er. Ananya Sharma',
-      email: 'area.mahadevapura@bbmp.gov.in',
-      radius: '11.0 km radius',
-      wards: 'Wards 150, 84, 85'
-    },
-    {
-      id: 'Central',
-      name: 'Central Zone (MG Road, Shanthinagar, CBD)',
-      engineer: 'Er. Ramesh Patil',
-      email: 'area.central@bbmp.gov.in',
-      radius: '6.0 km radius',
-      wards: 'Wards 111, 110, 109'
-    },
-    {
-      id: 'North',
-      name: 'North Zone (Hebbal, Yelahanka, Expressway)',
-      engineer: 'Er. Vikram Rao',
-      email: 'area.north@bbmp.gov.in',
-      radius: '10.0 km radius',
-      wards: 'Wards 7, 6, 8'
-    }
-  ];
+  // Filter Sub-Divisions by Selected Corporation & Search
+  const filteredSubdivisions = allSubdivisions.filter(sub => {
+    const matchesCorp = selectedCorporation === 'All' || sub.corporation === selectedCorporation;
+    const matchesSearch = !subdivSearch || 
+      sub.name.toLowerCase().includes(subdivSearch.toLowerCase()) ||
+      sub.engineer.toLowerCase().includes(subdivSearch.toLowerCase()) ||
+      sub.email.toLowerCase().includes(subdivSearch.toLowerCase()) ||
+      (sub.wards && sub.wards.some(w => String(w).includes(subdivSearch)));
+    return matchesCorp && matchesSearch;
+  });
 
-  const handleZoneChange = (zoneId) => {
-    setSelectedZone(zoneId);
-    const match = AREA_ZONES.find(z => z.id === zoneId);
-    if (match) {
-      setAreaEmail(match.email);
-    }
+  const handleSelectSubdivision = (sub) => {
+    setSelectedSubdiv(sub);
+    setAreaEmail(sub.email);
+    setAreaPassword('admin123');
+    setLoginError(null);
   };
 
   const handleLoginSubmit = async (e) => {
@@ -92,6 +69,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
 
     const emailToSend = selectedRole === 'head_admin' ? headEmail : areaEmail;
     const passwordToSend = selectedRole === 'head_admin' ? headPassword : areaPassword;
+    const roleToSend = selectedRole === 'head_admin' ? 'HEAD_ADMIN' : 'SUBDIVISION_HEAD';
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -100,8 +78,8 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
         body: JSON.stringify({
           email: emailToSend,
           password: passwordToSend,
-          role: selectedRole === 'head_admin' ? 'HEAD_ADMIN' : 'AREA_HEAD',
-          zone: selectedRole === 'area_head' ? selectedZone : null
+          role: roleToSend,
+          subdivision_id: selectedSubdiv?.id
         })
       });
 
@@ -119,8 +97,8 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
     }
   };
 
-  // Instant 1-Click Quick Demo Login
-  const triggerQuickLogin = (role, zoneId = 'South') => {
+  // Instant 1-Click Demo Login
+  const triggerQuickLogin = (role, customSubdiv = null) => {
     setIsLoading(true);
     setLoginError(null);
 
@@ -132,304 +110,440 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
         title: 'Chief Municipal Infrastructure Commissioner',
         email: 'head.admin@bbmp.gov.in',
         role: 'HEAD_ADMIN',
-        agency: 'Bruhat Bengaluru Mahanagara Palike (Central Headquarters)',
-        jurisdiction: 'Greater Bengaluru Metropolitan Area (All 198 Wards)',
+        agency: 'Bruhat Bengaluru Mahanagara Palike (Central Command HQ)',
+        jurisdiction: 'All 5 Corporations & 50 Sub-Divisions (198 Wards)',
         badge: 'CHIEF_COMMISSIONER'
-      }, 'mock-head-jwt-token');
+      }, 'jwt-head-admin-token-' + Date.now());
     } else {
-      setSelectedRole('area_head');
-      const match = AREA_ZONES.find(z => z.id === zoneId) || AREA_ZONES[0];
+      setSelectedRole('subdiv_head');
+      const targetSub = customSubdiv || selectedSubdiv || defaultSubdiv;
       onLogin({
-        id: `AREA-HEAD-${match.id.toUpperCase()}`,
-        name: match.engineer,
-        title: `Executive Engineer - ${match.id} Zone`,
-        email: match.email,
-        zone: match.id,
-        role: 'AREA_HEAD',
-        agency: 'BBMP Zonal Engineering Wing',
-        jurisdiction: `${match.name} (${match.radius})`,
-        badge: 'ZONAL_HEAD'
-      }, 'mock-area-jwt-token');
+        id: targetSub.id,
+        name: targetSub.engineer,
+        title: `Head of ${targetSub.name}`,
+        email: targetSub.email,
+        subdivision_id: targetSub.id,
+        subdivision_name: targetSub.name,
+        corporation: targetSub.corporation,
+        center: targetSub.center,
+        radius_km: targetSub.radius_km,
+        wards: targetSub.wards,
+        role: 'SUBDIVISION_HEAD',
+        agency: `${targetSub.corporation} Bengaluru Corporation`
+      }, 'jwt-subdiv-token-' + Date.now());
     }
   };
 
-  const copyToClipboard = (text, key) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  // Popular Quick-Pick Sub-Divisions
+  const POPULAR_SUBDIVS = [
+    { id: 'subdiv-south-02', name: 'HSR Layout', corp: 'South', engineer: 'Er. K. Suresh Gowda' },
+    { id: 'subdiv-east-01', name: 'Indiranagar', corp: 'East', engineer: 'Er. Deepa Nair' },
+    { id: 'subdiv-east-08', name: 'Mahadevapura', corp: 'East', engineer: 'Er. Ananya Sharma' },
+    { id: 'subdiv-south-01', name: 'Koramangala', corp: 'South', engineer: 'Er. Ajay Prasad' },
+    { id: 'subdiv-central-01', name: 'MG Road / CBD', corp: 'Central', engineer: 'Er. Rajesh Patil' },
+    { id: 'subdiv-north-01', name: 'Hebbal', corp: 'North', engineer: 'Er. Vikram Rao' },
+    { id: 'subdiv-west-01', name: 'Malleshwaram', corp: 'West', engineer: 'Er. Raghavendra Rao' }
+  ];
 
   return (
-    <div className="max-w-3xl mx-auto my-8 px-4">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 text-slate-100">
       
-      {/* Outer Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
-        
-        {/* Glow ambient background effects */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
-
-        {/* Top Header */}
-        <div className="text-center space-y-2 relative">
-          <div className="w-14 h-14 bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-purple-500/20 ring-1 ring-white/20">
-            <KeyRound className="w-7 h-7 text-white" />
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Infra AI • Authority Portal
-          </h1>
-          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-            Restricted login for Municipal Chief Authority & Zonal Area Engineers.
-          </p>
+      {/* Top Banner */}
+      <div className="text-center space-y-3 mb-8">
+        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
+          <ShieldAlert className="w-4 h-4 text-blue-400" />
+          <span>Bruhat Bengaluru Mahanagara Palike • Command Portal</span>
         </div>
+        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Municipal Authority Login
+        </h1>
+        <p className="text-slate-400 text-sm max-w-2xl mx-auto">
+          Secure access portal for the Top Municipal Chief Commissioner and 50 Sub-Division Area Heads across Central, East, South, West, and North Corporations.
+        </p>
+      </div>
 
-        {/* =====================================================================
-            PROMINENT DEMO LOGIN CREDENTIALS CHEAT SHEET (CLICK TO LOGIN!)
-            ===================================================================== */}
-        <div className="bg-slate-950 p-5 rounded-2xl border-2 border-indigo-500/40 shadow-xl space-y-4 relative">
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-xs font-bold text-cyan-300">
-              <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span>OFFICIAL DEMO LOGIN CREDENTIALS (CLICK TO SIGN IN):</span>
+      {/* Role Selection Tabs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        
+        {/* Role Tab 1: Top Municipal Head */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole('head_admin');
+            setLoginError(null);
+          }}
+          className={`p-5 rounded-2xl border text-left transition relative cursor-pointer ${
+            selectedRole === 'head_admin'
+              ? 'bg-blue-950/60 border-blue-500 shadow-xl shadow-blue-500/10 ring-2 ring-blue-500/30'
+              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+          }`}
+        >
+          <div className="flex items-start space-x-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+              selectedRole === 'head_admin' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              <Building2 className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              Password: admin123
-            </span>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Top Oversight</span>
+                {selectedRole === 'head_admin' && (
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                )}
+              </div>
+              <h3 className="font-bold text-base text-white mt-1">Top Municipal Head</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Chief Infrastructure Commissioner. Citywide oversight over all 5 Corporations and 50 Sub-Divisions.
+              </p>
+            </div>
           </div>
+        </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Role Tab 2: Sub-Division Area Head */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRole('subdiv_head');
+            setLoginError(null);
+          }}
+          className={`p-5 rounded-2xl border text-left transition relative cursor-pointer ${
+            selectedRole === 'subdiv_head'
+              ? 'bg-cyan-950/60 border-cyan-500 shadow-xl shadow-cyan-500/10 ring-2 ring-cyan-500/30'
+              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+          }`}
+        >
+          <div className="flex items-start space-x-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+              selectedRole === 'subdiv_head' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400'
+            }`}>
+              <HardHat className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Field Execution</span>
+                {selectedRole === 'subdiv_head' && (
+                  <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                )}
+              </div>
+              <h3 className="font-bold text-base text-white mt-1">Sub-Division Area Head</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Select from any of the 50 Sub-Divisions across Bangalore. Receive routed defects, dispatch workers, and submit repair photos.
+              </p>
+            </div>
+          </div>
+        </button>
+
+      </div>
+
+      {/* Main Login Card */}
+      <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl relative">
+
+        {/* ROLE 1: TOP MUNICIPAL HEAD VIEW */}
+        {selectedRole === 'head_admin' && (
+          <div className="space-y-6">
             
-            {/* DEMO CARD 1: HEAD ADMIN */}
-            <div className="bg-gradient-to-br from-purple-950/50 via-slate-900 to-slate-950 p-4 rounded-xl border border-purple-500/40 space-y-2.5 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">
-                    1. HEAD ADMIN (TOP HEAD)
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">All 198 Wards</span>
-                </div>
-                <div className="text-xs font-bold text-white">
-                  Dr. B. K. Shivakumar (Chief Commissioner)
-                </div>
-                <div className="text-[11px] font-mono text-slate-300 space-y-0.5 bg-slate-950/80 p-2 rounded-lg border border-slate-800">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Email:</span>
-                    <strong className="text-purple-300">head.admin@bbmp.gov.in</strong>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Passcode:</span>
-                    <strong className="text-white">admin123</strong>
+            {/* Quick Demo Credentials Info Banner */}
+            <div className="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <KeyRound className="w-5 h-5 text-blue-400 shrink-0" />
+                <div>
+                  <div className="text-xs font-bold text-blue-300">Official Demo Credentials (Pre-filled):</div>
+                  <div className="text-xs text-slate-300 font-mono mt-0.5">
+                    User: <span className="text-white font-bold">head.admin@bbmp.gov.in</span> • Pass: <span className="text-white font-bold">admin123</span>
                   </div>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={() => triggerQuickLogin('head_admin')}
-                className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer mt-1"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition flex items-center justify-center space-x-2 cursor-pointer"
               >
-                <span>👑 1-Click Login as Head Admin</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>1-Click Head Admin Login</span>
               </button>
             </div>
 
-            {/* DEMO CARD 2: AREA HEAD */}
-            <div className="bg-gradient-to-br from-blue-950/50 via-slate-900 to-slate-950 p-4 rounded-xl border border-cyan-500/40 space-y-2.5 flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/40 font-mono">
-                    2. AREA HEAD (ZONAL ADMIN)
-                  </span>
-                  <span className="text-[10px] text-cyan-400 font-mono">8.5 km radius</span>
-                </div>
-                <div className="text-xs font-bold text-white">
-                  Er. Suresh Gowda (South Zone Area Head)
-                </div>
-                <div className="text-[11px] font-mono text-slate-300 space-y-0.5 bg-slate-950/80 p-2 rounded-lg border border-slate-800">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Email:</span>
-                    <strong className="text-cyan-300">area.south@bbmp.gov.in</strong>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Passcode:</span>
-                    <strong className="text-white">admin123</strong>
-                  </div>
+            {/* Officer Profile Preview */}
+            <div className="bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                BS
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-base">Dr. B. K. Shivakumar</h4>
+                <p className="text-xs text-blue-400 font-medium">Chief Municipal Infrastructure Commissioner</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  HQ: BBMP Central Command, Hudson Circle • Jurisdiction: All 5 Corporations & 50 Sub-Divisions
+                </p>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Official BBMP Email</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    value={headEmail}
+                    onChange={(e) => setHeadEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition font-mono"
+                    required
+                  />
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Government Security Credential</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="password"
+                    value={headPassword}
+                    onChange={(e) => setHeadPassword(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+                  {loginError}
+                </div>
+              )}
+
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-600/25 transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span>{isLoading ? 'Authenticating...' : 'Sign In as Head Commissioner'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+
+          </div>
+        )}
+
+        {/* ROLE 2: SUB-DIVISION AREA HEAD VIEW (50 SUB-DIVISIONS) */}
+        {selectedRole === 'subdiv_head' && (
+          <div className="space-y-6">
+            
+            {/* Quick Demo Credentials Info Banner */}
+            <div className="bg-cyan-950/40 border border-cyan-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <KeyRound className="w-5 h-5 text-cyan-400 shrink-0" />
+                <div>
+                  <div className="text-xs font-bold text-cyan-300">Area Head Credentials (Pre-filled):</div>
+                  <div className="text-xs text-slate-300 font-mono mt-0.5">
+                    User: <span className="text-white font-bold">{selectedSubdiv?.email}</span> • Pass: <span className="text-white font-bold">admin123</span>
+                  </div>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => triggerQuickLogin('area_head', 'South')}
-                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer mt-1"
+                onClick={() => triggerQuickLogin('subdiv_head')}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/30 transition flex items-center justify-center space-x-2 cursor-pointer"
               >
-                <span>👷 1-Click Login as Area Head</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>1-Click Login to {selectedSubdiv?.name.split(' ')[0]}</span>
               </button>
             </div>
 
-          </div>
-
-          {/* Quick Zone Switcher for Area Heads */}
-          <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
-            <span className="text-slate-400">Other Area Head Zones (Passcode: admin123):</span>
-            <div className="flex flex-wrap gap-1.5">
-              {AREA_ZONES.map(z => (
-                <button
-                  key={z.id}
-                  type="button"
-                  onClick={() => triggerQuickLogin('area_head', z.id)}
-                  className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition cursor-pointer"
-                >
-                  {z.id} Zone
-                </button>
-              ))}
+            {/* Quick-Pick Popular Sub-Divisions Bar */}
+            <div>
+              <div className="text-xs font-semibold text-slate-400 mb-2 flex items-center justify-between">
+                <span>Quick-Pick Popular Sub-Divisions:</span>
+                <span className="text-[11px] text-cyan-400">{allSubdivisions.length} Total Sub-Divisions</span>
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {POPULAR_SUBDIVS.map(item => {
+                  const subObj = allSubdivisions.find(s => s.id === item.id);
+                  const isSelected = selectedSubdiv?.id === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => subObj && handleSelectSubdivision(subObj)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
+                        isSelected
+                          ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md shadow-cyan-500/20'
+                          : 'bg-slate-950/70 text-slate-300 border-slate-800 hover:border-slate-700 hover:bg-slate-800'
+                      }`}
+                    >
+                      {item.name} ({item.corp})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-        </div>
-
-        {/* =====================================================================
-            MANUAL LOGIN FORM (PRE-FILLED FOR DIRECT SUBMIT)
-            ===================================================================== */}
-        <div className="space-y-4">
-          
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">
-              Or Sign In with Form Credentials:
-            </span>
-          </div>
-
-          {/* ROLE SWITCHER TABS */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
-            <button
-              type="button"
-              onClick={() => { setSelectedRole('head_admin'); setLoginError(null); }}
-              className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition cursor-pointer ${
-                selectedRole === 'head_admin'
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-extrabold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>👑 Head Admin</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setSelectedRole('area_head'); setLoginError(null); }}
-              className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-2 transition cursor-pointer ${
-                selectedRole === 'area_head'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-extrabold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>👷 Area Head</span>
-            </button>
-          </div>
-
-          {/* Error Message */}
-          {loginError && (
-            <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/50 text-rose-300 text-xs flex items-center space-x-2">
-              <ShieldAlert className="w-4 h-4 text-rose-400 flex-shrink-0" />
-              <span>{loginError}</span>
+            {/* 5 Corporations Selector Tabs */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-2">
+                1. Select Corporation (5 Corporation System)
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {CORPORATIONS.map(corp => {
+                  const count = corp === 'All' 
+                    ? allSubdivisions.length 
+                    : allSubdivisions.filter(s => s.corporation === corp).length;
+                  const isActive = selectedCorporation === corp;
+                  return (
+                    <button
+                      key={corp}
+                      type="button"
+                      onClick={() => setSelectedCorporation(corp)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition text-center cursor-pointer border ${
+                        isActive
+                          ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-600/30'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                      }`}
+                    >
+                      <div>{corp}</div>
+                      <div className="text-[10px] opacity-75">{count} divs</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
 
-          {/* Form */}
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            
-            {/* AREA HEAD JURISDICTION SELECTOR */}
-            {selectedRole === 'area_head' && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block flex items-center justify-between">
-                  <span>Select Jurisdiction / Zone</span>
-                  <span className="text-[11px] text-cyan-400 font-mono">Radius: {AREA_ZONES.find(z => z.id === selectedZone)?.radius}</span>
-                </label>
-                
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
-                  <select
-                    value={selectedZone}
-                    onChange={(e) => handleZoneChange(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+            {/* Sub-Division Search & Dropdown Selector */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-300">
+                2. Choose Sub-Division ({filteredSubdivisions.length} Available in {selectedCorporation})
+              </label>
+              
+              <div className="relative mb-2">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search sub-division name, engineer or ward..."
+                  value={subdivSearch}
+                  onChange={(e) => setSubdivSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <select
+                value={selectedSubdiv?.id || ''}
+                onChange={(e) => {
+                  const match = allSubdivisions.find(s => s.id === e.target.value);
+                  if (match) handleSelectSubdivision(match);
+                }}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+              >
+                {filteredSubdivisions.map(sub => (
+                  <option key={sub.id} value={sub.id}>
+                    [{sub.corporation} Corp] {sub.name} — {sub.engineer}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Selected Sub-Division Officer Card */}
+            {selectedSubdiv && (
+              <div className="bg-slate-950/80 rounded-2xl p-4 border border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0">
+                    <HardHat className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-white text-sm">{selectedSubdiv.engineer}</h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        {selectedSubdiv.corporation} Corporation
+                      </span>
+                    </div>
+                    <p className="text-xs text-cyan-300 font-medium">{selectedSubdiv.name}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Coverage: {selectedSubdiv.radius_km} km radius • Wards: {selectedSubdiv.wards?.join(', ') || 'Jurisdiction'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-full sm:w-auto flex sm:flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => triggerQuickLogin('subdiv_head', selectedSubdiv)}
+                    className="flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-600/20 flex items-center justify-center space-x-1 cursor-pointer"
                   >
-                    {AREA_ZONES.map(z => (
-                      <option key={z.id} value={z.id} className="bg-slate-900 text-white">
-                        {z.name} — {z.engineer}
-                      </option>
-                    ))}
-                  </select>
+                    <span>Instant Login</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Email Field */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 block">
-                {selectedRole === 'head_admin' ? 'Head Commissioner Email' : 'Area Executive Engineer Email'}
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="email"
-                  required
-                  value={selectedRole === 'head_admin' ? headEmail : areaEmail}
-                  onChange={(e) => {
-                    if (selectedRole === 'head_admin') setHeadEmail(e.target.value);
-                    else setAreaEmail(e.target.value);
-                  }}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                />
+            {/* Email & Password Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Official Sub-Division Email</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    value={areaEmail}
+                    onChange={(e) => setAreaEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition font-mono"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Password Field */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Passcode
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="password"
-                  required
-                  value={selectedRole === 'head_admin' ? headPassword : areaPassword}
-                  onChange={(e) => {
-                    if (selectedRole === 'head_admin') setHeadPassword(e.target.value);
-                    else setAreaPassword(e.target.value);
-                  }}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                />
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Engineer Access Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <input
+                    type="password"
+                    value={areaPassword}
+                    onChange={(e) => setAreaPassword(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition font-mono"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm text-white shadow-xl transition-all cursor-pointer flex items-center justify-center space-x-2 ${
-                selectedRole === 'head_admin'
-                  ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30'
-                  : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30'
-              }`}
-            >
-              <span>{isLoading ? 'Verifying...' : `Sign In as ${selectedRole === 'head_admin' ? 'Head Admin' : 'Area Head'}`}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+                  {loginError}
+                </div>
+              )}
 
-          </form>
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-600/25 transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                >
+                  <span>{isLoading ? 'Authenticating...' : `Enter ${selectedSubdiv?.name || 'Sub-Division'} Dashboard`}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
 
-        </div>
-
-        {onCancel && (
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs text-slate-500 hover:text-slate-300 transition"
-            >
-              ← Cancel and return to public platform
-            </button>
           </div>
         )}
 
