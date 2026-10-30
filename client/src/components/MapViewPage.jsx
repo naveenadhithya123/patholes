@@ -67,33 +67,6 @@ function formatDuration(minutes) {
   return `${hrText} ${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
 }
 
-// Generate fallback multi-point real road curve if external routing engine is temporarily unavailable
-function generateCurvedRoadPath(oLat, oLng, dLat, dLng, isDetour = false) {
-  const steps = 24;
-  const path = [];
-  const midLat = (oLat + dLat) / 2;
-  const midLng = (oLng + dLng) / 2;
-
-  // Lateral deflection factor to follow arterial grid
-  const lateralFactor = isDetour ? 0.22 : 0.07;
-  const perpLat = -(dLng - oLng) * lateralFactor;
-  const perpLng = (dLat - oLat) * lateralFactor;
-
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    // Quadratic bezier curve along road corridor
-    const u = 1 - t;
-    const tt = t * t;
-    const uu = u * u;
-    const ut2 = 2 * u * t;
-
-    const lat = uu * oLat + ut2 * (midLat + perpLat) + tt * dLat;
-    const lng = uu * oLng + ut2 * (midLng + perpLng) + tt * dLng;
-    path.push([lat, lng]);
-  }
-  return path;
-}
-
 export default function MapViewPage({ onBack, defects = [], roads = [] }) {
   // 1. Live GPS State (Origin)
   const [userLocation, setUserLocation] = useState({
@@ -190,66 +163,96 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     const dLat = destination.lat;
     const dLng = destination.lng;
 
-    const fetchOSRM = async () => {
+    const fetchRoutes = async () => {
+      // 1. Try Backend Real Road Navigation Proxy first (guaranteed real roads with via detour)
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson&alternatives=true`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('OSRM routing failed');
+        const res = await fetch(`/api/navigation/route?originLat=${oLat}&originLng=${oLng}&destLat=${dLat}&destLng=${dLng}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.success && data.primary && data.primary.path && data.primary.path.length > 0) {
+            setRoutingData({
+              primaryPath: data.primary.path,
+              primaryDistanceKm: data.primary.distanceKm,
+              primaryDurationMin: data.primary.durationMin,
+              altPath: data.alternative?.path || null,
+              altDistanceKm: data.alternative?.distanceKm || 0,
+              altDurationMin: data.alternative?.durationMin || 0,
+              hasAlternativeRoad: !!data.alternative?.path
+            });
+            setIsRouting(false);
+            return;
+          }
+        }
+      } catch (proxyErr) {
+        // Fall through to direct OSRM queries
+      }
+
+      // 2. Direct client-side OSRM queries if backend proxy is unreachable
+      try {
+        const urlPrimary = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson&alternatives=true`;
+        const res = await fetch(urlPrimary);
         const data = await res.json();
 
         if (isMounted && data.code === 'Ok' && data.routes && data.routes.length > 0) {
           const primary = data.routes[0];
           const primaryCoords = primary.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          const primaryDistKm = Math.round((primary.distance / 1000) * 10) / 10;
+          const primaryDurMin = Math.max(2, Math.round(primary.duration / 60));
 
           let altCoords = null;
-          let altDurationSec = 0;
-          let altDistanceM = 0;
+          let altDistKm = 0;
+          let altDurMin = 0;
 
           if (data.routes.length > 1) {
             const alt = data.routes[1];
             altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-            altDurationSec = alt.duration;
-            altDistanceM = alt.distance;
+            altDistKm = Math.round((alt.distance / 1000) * 10) / 10;
+            altDurMin = Math.max(2, Math.round(alt.duration / 60));
           } else {
-            // If OSRM returned 1 route, generate real alternative via secondary parallel road corridor
-            altCoords = generateCurvedRoadPath(oLat, oLng, dLat, dLng, true);
-            altDurationSec = primary.duration * 1.25;
-            altDistanceM = primary.distance * 1.25;
+            // Find real alternative road via intermediate parallel corridor waypoint
+            const coords = primary.geometry.coordinates;
+            const pivot = coords[Math.floor(coords.length * 0.45)];
+            const latDelta = dLat - oLat;
+            const lngDelta = dLng - oLng;
+            const offset = 0.022; // ~2.2km to parallel road corridor
+            const viaLng = pivot[0] + (latDelta > 0 ? -offset : offset);
+            const viaLat = pivot[1] + (lngDelta > 0 ? offset : -offset);
+
+            const urlVia = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${viaLng.toFixed(5)},${viaLat.toFixed(5)};${dLng},${dLat}?overview=full&geometries=geojson`;
+            try {
+              const vRes = await fetch(urlVia);
+              const vData = await vRes.json();
+              if (vData.code === 'Ok' && vData.routes && vData.routes.length > 0) {
+                const alt = vData.routes[0];
+                altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+                altDistKm = Math.round((alt.distance / 1000) * 10) / 10;
+                altDurMin = Math.max(2, Math.round(alt.duration / 60));
+              }
+            } catch (viaErr) {}
           }
 
-          setRoutingData({
-            primaryPath: primaryCoords,
-            primaryDistanceKm: Math.round((primary.distance / 1000) * 10) / 10,
-            primaryDurationMin: Math.max(2, Math.round(primary.duration / 60)),
-            altPath: altCoords,
-            altDistanceKm: Math.round((altDistanceM / 1000) * 10) / 10,
-            altDurationMin: Math.max(3, Math.round(altDurationSec / 60)),
-            hasAlternativeRoad: true
-          });
-          setIsRouting(false);
-          return;
+          if (isMounted) {
+            setRoutingData({
+              primaryPath: primaryCoords,
+              primaryDistanceKm: primaryDistKm,
+              primaryDurationMin: primaryDurMin,
+              altPath: altCoords,
+              altDistanceKm: altDistKm,
+              altDurationMin: altDurMin,
+              hasAlternativeRoad: !!altCoords
+            });
+            setIsRouting(false);
+            return;
+          }
         }
-      } catch (err) {
-        // Fallback to high-resolution road curves along arterial road corridors
-      }
+      } catch (err) {}
 
       if (isMounted) {
-        const distKm = Math.round(haversineDistance(oLat, oLng, dLat, dLng) * 1.15 * 10) / 10;
-        const driveMin = Math.max(3, Math.round(distKm * 2.2));
-        setRoutingData({
-          primaryPath: generateCurvedRoadPath(oLat, oLng, dLat, dLng, false),
-          primaryDistanceKm: distKm,
-          primaryDurationMin: driveMin,
-          altPath: generateCurvedRoadPath(oLat, oLng, dLat, dLng, true),
-          altDistanceKm: Math.round(distKm * 1.25 * 10) / 10,
-          altDurationMin: Math.round(driveMin * 1.25),
-          hasAlternativeRoad: true
-        });
         setIsRouting(false);
       }
     };
 
-    fetchOSRM();
+    fetchRoutes();
 
     return () => {
       isMounted = false;

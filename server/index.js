@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
@@ -93,6 +94,106 @@ app.post('/api/auth/login', (req, res) => {
     success: false,
     message: 'Invalid administrative credentials. Use admin@bbmp.gov.in / admin123'
   });
+});
+
+/* ==========================================================================
+   NAVIGATION & REAL ROAD ROUTING (OSRM Proxy & Real Alternative Road Finder)
+   ========================================================================== */
+function fetchOsrmJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      rejectUnauthorized: false
+    }, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(new Error(body.slice(0, 100)));
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+app.get('/api/navigation/route', async (req, res) => {
+  const oLat = parseFloat(req.query.originLat);
+  const oLng = parseFloat(req.query.originLng);
+  const dLat = parseFloat(req.query.destLat);
+  const dLng = parseFloat(req.query.destLng);
+
+  if (isNaN(oLat) || isNaN(oLng) || isNaN(dLat) || isNaN(dLng)) {
+    return res.status(400).json({ success: false, message: 'Invalid GPS coordinates' });
+  }
+
+  try {
+    const urlPrimary = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson&alternatives=true`;
+    const pData = await fetchOsrmJson(urlPrimary);
+
+    if (pData.code !== 'Ok' || !pData.routes || pData.routes.length === 0) {
+      return res.status(404).json({ success: false, message: 'No valid road route found' });
+    }
+
+    const primary = pData.routes[0];
+    const primaryCoords = primary.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const primaryDistanceKm = Math.round((primary.distance / 1000) * 10) / 10;
+    const primaryDurationMin = Math.max(2, Math.round(primary.duration / 60));
+
+    let alt = pData.routes.length > 1 ? pData.routes[1] : null;
+
+    // If OSRM didn't return an alternative automatically, route via real parallel road network waypoint!
+    if (!alt) {
+      const coords = primary.geometry.coordinates;
+      const pivot = coords[Math.floor(coords.length * 0.45)];
+      const latDelta = dLat - oLat;
+      const lngDelta = dLng - oLng;
+      const offset = 0.022; // ~2.2km lateral shift to parallel corridor
+      const viaLng = pivot[0] + (latDelta > 0 ? -offset : offset);
+      const viaLat = pivot[1] + (lngDelta > 0 ? offset : -offset);
+
+      const urlVia = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${viaLng.toFixed(5)},${viaLat.toFixed(5)};${dLng},${dLat}?overview=full&geometries=geojson`;
+      try {
+        const vData = await fetchOsrmJson(urlVia);
+        if (vData.code === 'Ok' && vData.routes && vData.routes.length > 0) {
+          alt = vData.routes[0];
+        }
+      } catch (viaErr) {
+        // Via query failed, keep alt as null
+      }
+    }
+
+    let altCoords = null;
+    let altDistanceKm = 0;
+    let altDurationMin = 0;
+
+    if (alt) {
+      altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+      altDistanceKm = Math.round((alt.distance / 1000) * 10) / 10;
+      altDurationMin = Math.max(2, Math.round(alt.duration / 60));
+    }
+
+    return res.json({
+      success: true,
+      hasAlternativeRoad: !!altCoords,
+      primary: {
+        path: primaryCoords,
+        distanceKm: primaryDistanceKm,
+        durationMin: primaryDurationMin
+      },
+      alternative: altCoords
+        ? {
+            path: altCoords,
+            distanceKm: altDistanceKm,
+            durationMin: altDurationMin
+          }
+        : null
+    });
+  } catch (err) {
+    console.error('Route navigation error:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 /* ==========================================================================
