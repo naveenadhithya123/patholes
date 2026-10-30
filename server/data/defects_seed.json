@@ -345,7 +345,7 @@
     "ai_priority_score": 95,
     "ai_reasoning": "High-density residential/commercial connector + dangerous crater depth causing vehicle axle damage.",
     "reported_by": "citizen_manual_camera",
-    "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+    "image_url": "/images/pothole_before.jpg",
     "created_at": "2026-10-28T09:00:00Z",
     "status": "Resolved",
     "workflow_stage": "RESOLVED",
@@ -359,10 +359,10 @@
       "assigned_at": "2026-10-28T10:00:00Z"
     },
     "completion_details": {
-      "after_image_url": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80",
+      "after_image_url": "/images/pothole_after.jpg",
       "completed_at": "2026-10-29T15:20:00Z",
       "completed_by_workers": "South Zone Asphalt Unit #2",
-      "repair_notes": "Full-depth patch excavation, aggregate base stabilization, and 60mm BC asphalt surface layer laid and roller compacted.",
+      "repair_notes": "Cavity debris milled out, tack coat emulsion applied, dense bituminous asphalt compacted flush and roller-leveled with surrounding road surface.",
       "duration_str": "1 day 6 hrs"
     },
     "resolved_at": "2026-10-29T16:10:00Z",

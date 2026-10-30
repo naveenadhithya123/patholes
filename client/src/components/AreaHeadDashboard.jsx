@@ -48,6 +48,10 @@ export default function AreaHeadDashboard({ govUser, onLogout, defects = [], onD
   // Preset Realistic Repaired Road Photos for Instant Demo
   const REPAIR_PHOTO_PRESETS = [
     {
+      name: 'Compacted Asphalt Patch (Matching Frame)',
+      url: '/images/pothole_after.jpg'
+    },
+    {
       name: 'Fresh Hot-Mix Bituminous Patch (Smooth)',
       url: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80'
     },
@@ -58,10 +62,6 @@ export default function AreaHeadDashboard({ govUser, onLogout, defects = [], onD
     {
       name: 'Paved Urban Street with Restored Kerb',
       url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80'
-    },
-    {
-      name: 'Compacted Asphalt Pavement Surface',
-      url: 'https://images.unsplash.com/photo-1494783367193-149034c05e8f?auto=format&fit=crop&w=800&q=80'
     }
   ];
 
