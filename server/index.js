@@ -316,9 +316,21 @@ app.post('/api/defects/report', async (req, res) => {
   // STEP 2: RUN REAL AI COMPUTER VISION INFERENCE
   let aiVisionResult = null;
   try {
-    aiVisionResult = await analyzeImageWithAI(image_data, location);
+    aiVisionResult = await analyzeImageWithAI(image_data, { ...location, type: userType, dimensions: userDimensions });
   } catch (err) {
     console.warn('AI vision analysis error:', err.message);
+  }
+
+  // VALIDATION: Reject reports if no defect exists or if screen spoof is detected
+  if (userType === 'none' || (aiVisionResult && aiVisionResult.defect_detected === false) || (aiVisionResult && aiVisionResult.is_spoof)) {
+    return res.status(400).json({
+      success: false,
+      defect_detected: false,
+      is_spoof: aiVisionResult?.is_spoof || false,
+      message: aiVisionResult?.is_spoof
+        ? 'Anti-Spoof Alert: Digital screen or photo reproduction detected. Only authentic physical infrastructure damage can be logged.'
+        : 'Inspection Complete: No road or infrastructure damage detected in the captured frame. Camera must face actual damage to generate a municipal ticket.'
+    });
   }
 
   const effectiveType = (aiVisionResult && aiVisionResult.category) || userType || 'pothole';
