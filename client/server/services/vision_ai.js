@@ -79,7 +79,7 @@ Return STRICTLY valid JSON with no markdown wrapping and no backticks:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: [
           {
             role: 'user',
@@ -102,7 +102,7 @@ Return STRICTLY valid JSON with no markdown wrapping and no backticks:
 
       return {
         success: true,
-        ai_engine: 'Google Gemini 2.5 Flash Vision',
+        ai_engine: 'Google Gemini 3.8 Flash Multimodal Vision',
         ...parsed
       };
     } catch (err) {
