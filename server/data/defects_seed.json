@@ -27,21 +27,21 @@
     "ai_priority_score": 96,
     "ai_reasoning": "High-speed arterial bottleneck (145k PCU/day) + Critical depth (14cm) + Road age 11 yrs exceeds lifespan + Severe monsoon volatility in zone.",
     "reported_by": "patrol_vehicle_bumper_cam",
-    "vehicle_telemetry": {
-      "vehicle_id": "KA-01-MUNICIPAL-402",
-      "speed_kmh": 46.5,
-      "lidar_distance_ft": 5.4,
-      "sensor_confidence": 0.96
-    },
     "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T18:40:00Z",
+    "created_at": "2026-10-30T08:40:00Z",
     "status": "In Progress",
-    "assigned_to": {
-      "contractor": "Nandi Infrastructure Ltd.",
-      "engineer": "Er. Suresh Gowda (Ward 174)",
-      "dispatched_at": "2026-10-29T19:15:00Z",
-      "target_sla_hours": 12
+    "workflow_stage": "IN_PROGRESS",
+    "head_admin_forwarded": true,
+    "assigned_area_head": {
+      "id": "AREA-HEAD-01",
+      "name": "Er. Suresh Gowda",
+      "title": "Executive Engineer - South Zone",
+      "email": "area.south@bbmp.gov.in",
+      "zone": "South",
+      "assigned_at": "2026-10-30T09:15:00Z"
     },
+    "field_crew": "Ward 174 Rapid Asphalt Paving Gang #1",
+    "head_admin_approved": false,
     "verification_count": 8,
     "duplicates_prevented": 14
   },
@@ -75,13 +75,25 @@
     "reported_by": "citizen_manual_camera",
     "image_url": "https://images.unsplash.com/photo-1542314831-c6a4d27299a9?auto=format&fit=crop&w=800&q=80",
     "created_at": "2026-10-29T19:20:00Z",
-    "status": "Work Order Issued",
-    "assigned_to": {
-      "contractor": "Apex Highway Maintenance Corp",
-      "engineer": "Er. Lakshmi Narayana (Ward 150)",
-      "dispatched_at": "2026-10-29T20:05:00Z",
-      "target_sla_hours": 18
+    "status": "Pending Head Approval",
+    "workflow_stage": "PENDING_HEAD_APPROVAL",
+    "head_admin_forwarded": true,
+    "assigned_area_head": {
+      "id": "AREA-HEAD-03",
+      "name": "Er. Ananya Sharma",
+      "title": "Executive Engineer - Mahadevapura Zone",
+      "email": "area.mahadevapura@bbmp.gov.in",
+      "zone": "Mahadevapura",
+      "assigned_at": "2026-10-29T20:00:00Z"
     },
+    "completion_details": {
+      "after_image_url": "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80",
+      "completed_at": "2026-10-30T17:45:00Z",
+      "completed_by_workers": "Mahadevapura Arterial Squad #1",
+      "repair_notes": "50mm Dense Bituminous Macadam (DBM) hot mix filled, leveled, and compacted with 10-ton roller. Surface sealed with cationic bituminous emulsion.",
+      "duration_str": "22 hrs 25 mins"
+    },
+    "head_admin_approved": false,
     "verification_count": 5,
     "duplicates_prevented": 9
   },
@@ -114,14 +126,19 @@
     "ai_reasoning": "High-risk retaining wall failure potential + 15 yr overdue road structure + critical heavy commercial freight traffic.",
     "reported_by": "citizen_manual_camera",
     "image_url": "https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T16:15:00Z",
-    "status": "In Progress",
-    "assigned_to": {
-      "contractor": "BBMP Bridge & Structural Wing",
-      "engineer": "Er. Manjunath Reddy (Chief Structural Inspector)",
-      "dispatched_at": "2026-10-29T17:00:00Z",
-      "target_sla_hours": 8
+    "created_at": "2026-10-30T11:15:00Z",
+    "status": "Assigned to Area Head",
+    "workflow_stage": "ASSIGNED_TO_AREA_HEAD",
+    "head_admin_forwarded": true,
+    "assigned_area_head": {
+      "id": "AREA-HEAD-02",
+      "name": "Er. Deepa Nair",
+      "title": "Executive Engineer - East Zone",
+      "email": "area.east@bbmp.gov.in",
+      "zone": "East",
+      "assigned_at": "2026-10-30T12:00:00Z"
     },
+    "head_admin_approved": false,
     "verification_count": 12,
     "duplicates_prevented": 22
   },
@@ -153,16 +170,13 @@
     "ai_priority_score": 86,
     "ai_reasoning": "Advanced alligator cracking preceding full pothole collapse; road is 3 years past designed lifecycle.",
     "reported_by": "patrol_vehicle_bumper_cam",
-    "vehicle_telemetry": {
-      "vehicle_id": "KA-01-PATROL-108",
-      "speed_kmh": 38.0,
-      "lidar_distance_ft": 5.2,
-      "sensor_confidence": 0.89
-    },
     "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T17:45:00Z",
-    "status": "Reported",
-    "assigned_to": null,
+    "created_at": "2026-10-30T14:45:00Z",
+    "status": "Reported (Pending Head Distribution)",
+    "workflow_stage": "AWAITING_HEAD_ASSIGNMENT",
+    "head_admin_forwarded": true,
+    "assigned_area_head": null,
+    "head_admin_approved": false,
     "verification_count": 3,
     "duplicates_prevented": 7
   },
@@ -183,7 +197,7 @@
       "address": "Hebbal Flyover Ramp toward Airport, Ward 7",
       "ward_no": 7,
       "ward_name": "Byatarayanapura",
-      "zone": "Yelahanka"
+      "zone": "North"
     },
     "road_id": "RD-BLR-009",
     "traffic_congestion_tier": "CRITICAL",
@@ -195,14 +209,12 @@
     "ai_reasoning": "Airport feeder corridor with 160k PCU/day + structural shock to bridge deck.",
     "reported_by": "citizen_manual_camera",
     "image_url": "https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T15:10:00Z",
-    "status": "Work Order Issued",
-    "assigned_to": {
-      "contractor": "National Highway Joint Services",
-      "engineer": "Er. Arvind Kumar (Bridge Division)",
-      "dispatched_at": "2026-10-29T16:00:00Z",
-      "target_sla_hours": 12
-    },
+    "created_at": "2026-10-30T15:10:00Z",
+    "status": "Reported (Pending Head Distribution)",
+    "workflow_stage": "AWAITING_HEAD_ASSIGNMENT",
+    "head_admin_forwarded": true,
+    "assigned_area_head": null,
+    "head_admin_approved": false,
     "verification_count": 9,
     "duplicates_prevented": 19
   },
@@ -212,7 +224,7 @@
     "type": "pothole",
     "category_label": "Moderate Road Pothole",
     "title": "Pothole at Indiranagar 100ft & 12th Main Crossing",
-    "description": "Surface crater approx 7cm deep near bus shelter. Slowing turning traffic during peak commute.",
+    "description": "Surface crater approx 7cm deep near bus shelter. Repaired with rapid bituminous cold patch and leveled.",
     "severity": "MODERATE",
     "severity_score": 65,
     "confidence_pct": 93.0,
@@ -235,15 +247,35 @@
     "ai_reasoning": "Commercial hotspot + road age 13 years (overdue) + moderate pothole depth.",
     "reported_by": "citizen_manual_camera",
     "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T14:30:00Z",
+    "created_at": "2026-10-29T10:15:00Z",
     "status": "Resolved",
-    "assigned_to": {
-      "contractor": "FastTrack Paving Works",
-      "engineer": "Er. Deepa Nair (Ward 80)",
-      "dispatched_at": "2026-10-29T15:00:00Z",
-      "target_sla_hours": 24
+    "workflow_stage": "RESOLVED",
+    "head_admin_forwarded": true,
+    "assigned_area_head": {
+      "id": "AREA-HEAD-02",
+      "name": "Er. Deepa Nair",
+      "title": "Executive Engineer - East Zone",
+      "email": "area.east@bbmp.gov.in",
+      "zone": "East",
+      "assigned_at": "2026-10-29T11:00:00Z"
     },
-    "resolved_at": "2026-10-29T18:00:00Z",
+    "completion_details": {
+      "after_image_url": "https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80",
+      "completed_at": "2026-10-30T05:30:00Z",
+      "completed_by_workers": "East Zone Rapid Patch Unit #2",
+      "repair_notes": "Cavity cleaned, tack-coated, packed with bituminous concrete and compacted flush with roadway.",
+      "duration_str": "19 hrs 15 mins"
+    },
+    "resolved_at": "2026-10-30T06:10:00Z",
+    "head_admin_approved": true,
+    "approved_by": {
+      "id": "HEAD-ADMIN-01",
+      "name": "Dr. B. K. Shivakumar",
+      "role": "BBMP Chief Infrastructure Officer",
+      "approved_at": "2026-10-30T06:10:00Z",
+      "remarks": "Dual photo verification confirmed. Grade-A leveling and road smoothness verified. Cleared for safe public transit."
+    },
+    "duration_took_str": "19 hrs 15 mins",
     "verification_count": 4,
     "duplicates_prevented": 11
   },
@@ -275,17 +307,75 @@
     "ai_priority_score": 58,
     "ai_reasoning": "Moderate traffic corridor + road age within 10-year lifespan + manageable longitudinal crack.",
     "reported_by": "patrol_vehicle_bumper_cam",
-    "vehicle_telemetry": {
-      "vehicle_id": "KA-01-PATROL-108",
-      "speed_kmh": 42.1,
-      "lidar_distance_ft": 5.5,
-      "sensor_confidence": 0.88
-    },
     "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
-    "created_at": "2026-10-29T13:00:00Z",
-    "status": "Reported",
-    "assigned_to": null,
+    "created_at": "2026-10-30T16:00:00Z",
+    "status": "Reported (Pending Head Distribution)",
+    "workflow_stage": "AWAITING_HEAD_ASSIGNMENT",
+    "head_admin_forwarded": true,
+    "assigned_area_head": null,
+    "head_admin_approved": false,
     "verification_count": 1,
     "duplicates_prevented": 3
+  },
+  {
+    "id": "DEF-2026-1008",
+    "ticket_code": "BBMP-RD-1008",
+    "type": "pothole",
+    "category_label": "Severe Road Pothole",
+    "title": "Severe Pavement Crater near Koramangala 80ft Road Junction",
+    "description": "High-impact road crater measuring 13cm depth. Thoroughly milled, repaved with hot bituminous mix and restored to highway grade.",
+    "severity": "CRITICAL",
+    "severity_score": 93,
+    "confidence_pct": 97.0,
+    "dimensions": { "width_cm": 58, "length_cm": 65, "depth_cm": 13 },
+    "location": {
+      "lat": 12.9344,
+      "lng": 77.6225,
+      "address": "Koramangala 4th Block Peripheral Road, Ward 151",
+      "ward_no": 151,
+      "ward_name": "Koramangala",
+      "zone": "South"
+    },
+    "road_id": "RD-BLR-010",
+    "traffic_congestion_tier": "CRITICAL",
+    "road_age_years": 10,
+    "is_road_overdue": true,
+    "climate_volatility_score": 75,
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 95,
+    "ai_reasoning": "High-density residential/commercial connector + dangerous crater depth causing vehicle axle damage.",
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-28T09:00:00Z",
+    "status": "Resolved",
+    "workflow_stage": "RESOLVED",
+    "head_admin_forwarded": true,
+    "assigned_area_head": {
+      "id": "AREA-HEAD-01",
+      "name": "Er. Suresh Gowda",
+      "title": "Executive Engineer - South Zone",
+      "email": "area.south@bbmp.gov.in",
+      "zone": "South",
+      "assigned_at": "2026-10-28T10:00:00Z"
+    },
+    "completion_details": {
+      "after_image_url": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80",
+      "completed_at": "2026-10-29T15:20:00Z",
+      "completed_by_workers": "South Zone Asphalt Unit #2",
+      "repair_notes": "Full-depth patch excavation, aggregate base stabilization, and 60mm BC asphalt surface layer laid and roller compacted.",
+      "duration_str": "1 day 6 hrs"
+    },
+    "resolved_at": "2026-10-29T16:10:00Z",
+    "head_admin_approved": true,
+    "approved_by": {
+      "id": "HEAD-ADMIN-01",
+      "name": "Dr. B. K. Shivakumar",
+      "role": "BBMP Chief Infrastructure Officer",
+      "approved_at": "2026-10-29T16:10:00Z",
+      "remarks": "Asphalt compaction density and Before/After imagery verified. Exceptional turnaround time."
+    },
+    "duration_took_str": "1 day 7 hrs",
+    "verification_count": 7,
+    "duplicates_prevented": 18
   }
 ]

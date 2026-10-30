@@ -65,34 +65,212 @@ function findClimateZoneForLocation(wardNo, zoneName) {
 }
 
 /* ==========================================================================
-   AUTH ROUTES (Municipal & Government Officials)
+   ROLE DEFINITIONS: HEAD ADMIN & AREA HEADS
+   ========================================================================== */
+const HEAD_ADMIN = {
+  id: 'HEAD-ADMIN-01',
+  name: 'Dr. B. K. Shivakumar',
+  title: 'Chief Municipal Infrastructure Commissioner',
+  email: 'head.admin@bbmp.gov.in',
+  role: 'HEAD_ADMIN',
+  agency: 'Bruhat Bengaluru Mahanagara Palike (Central Headquarters)',
+  jurisdiction: 'Greater Bengaluru Metropolitan Area (All 198 Wards)',
+  badge: 'CHIEF_COMMISSIONER'
+};
+
+const AREA_HEADS = [
+  {
+    id: 'AREA-HEAD-01',
+    name: 'Er. Suresh Gowda',
+    title: 'Executive Engineer - South Zone',
+    email: 'area.south@bbmp.gov.in',
+    phone: '+91 98450 12041',
+    zone: 'South',
+    wards: [174, 151, 146, 172],
+    ward_names: ['HSR Layout', 'Koramangala', 'Lakkasandra', 'Madivala'],
+    center_coords: { lat: 12.9250, lng: 77.6250 },
+    radius_km: 8.5,
+    role: 'AREA_HEAD',
+    field_crews: ['Ward 174 Rapid Paving Gang #1', 'South Zone Asphalt Unit #2']
+  },
+  {
+    id: 'AREA-HEAD-02',
+    name: 'Er. Deepa Nair',
+    title: 'Executive Engineer - East Zone',
+    email: 'area.east@bbmp.gov.in',
+    phone: '+91 98450 12042',
+    zone: 'East',
+    wards: [80, 52, 88, 112],
+    ward_names: ['Hoysala Nagar', 'KR Puram', 'Marathahalli', 'HAL Airport'],
+    center_coords: { lat: 12.9800, lng: 77.6700 },
+    radius_km: 9.0,
+    role: 'AREA_HEAD',
+    field_crews: ['East Zone Road Maintenance Crew #1', 'KR Puram Flyover Repair Gang']
+  },
+  {
+    id: 'AREA-HEAD-03',
+    name: 'Er. Ananya Sharma',
+    title: 'Executive Engineer - Mahadevapura Zone',
+    email: 'area.mahadevapura@bbmp.gov.in',
+    phone: '+91 98450 12043',
+    zone: 'Mahadevapura',
+    wards: [150, 84, 85, 86],
+    ward_names: ['Bellandur', 'Hagadur (Whitefield)', 'Doddanekkundi'],
+    center_coords: { lat: 12.9550, lng: 77.7100 },
+    radius_km: 11.0,
+    role: 'AREA_HEAD',
+    field_crews: ['Mahadevapura Arterial Squad #1', 'ITPL Corridor Paving Team']
+  },
+  {
+    id: 'AREA-HEAD-04',
+    name: 'Er. Ramesh Patil',
+    title: 'Executive Engineer - Central Zone',
+    email: 'area.central@bbmp.gov.in',
+    phone: '+91 98450 12044',
+    zone: 'Central',
+    wards: [111, 110, 109],
+    ward_names: ['Shanthinagar', 'MG Road Central', 'Sampangiram Nagar'],
+    center_coords: { lat: 12.9720, lng: 77.6000 },
+    radius_km: 6.0,
+    role: 'AREA_HEAD',
+    field_crews: ['Central CBD Patch Unit #1']
+  },
+  {
+    id: 'AREA-HEAD-05',
+    name: 'Er. Vikram Rao',
+    title: 'Executive Engineer - North Zone',
+    email: 'area.north@bbmp.gov.in',
+    phone: '+91 98450 12045',
+    zone: 'North',
+    wards: [7, 6, 8],
+    ward_names: ['Hebbal', 'Thanisandra', 'Kodigehalli', 'Yelahanka'],
+    center_coords: { lat: 13.0350, lng: 77.5950 },
+    radius_km: 10.0,
+    role: 'AREA_HEAD',
+    field_crews: ['North Expressway Rapid Response Team']
+  }
+];
+
+function formatDurationBetween(startIso, endIso) {
+  if (!startIso || !endIso) return '18 hours';
+  const start = new Date(startIso).getTime();
+  const end = new Date(endIso).getTime();
+  const diffMs = Math.max(0, end - start);
+  const totalMins = Math.round(diffMs / (1000 * 60));
+  const totalHours = Math.floor(totalMins / 60);
+  const remainingMins = totalMins % 60;
+
+  if (totalHours >= 24) {
+    const days = Math.floor(totalHours / 24);
+    const hrs = totalHours % 24;
+    return hrs > 0 ? `${days} day${days > 1 ? 's' : ''} ${hrs} hr${hrs > 1 ? 's' : ''}` : `${days} day${days > 1 ? 's' : ''}`;
+  }
+  if (totalHours > 0) {
+    return remainingMins > 0 ? `${totalHours} hr${totalHours > 1 ? 's' : ''} ${remainingMins} min${remainingMins > 1 ? 's' : ''}` : `${totalHours} hr${totalHours > 1 ? 's' : ''}`;
+  }
+  return `${totalMins} min${totalMins > 1 ? 's' : ''}`;
+}
+
+function findClosestAreaHead(lat, lng) {
+  let closest = AREA_HEADS[0];
+  let minDistance = Infinity;
+
+  for (const ah of AREA_HEADS) {
+    const distMeters = calculateHaversineDistance(lat, lng, ah.center_coords.lat, ah.center_coords.lng);
+    const distKm = distMeters / 1000;
+    if (distKm < minDistance) {
+      minDistance = distKm;
+      closest = { ...ah, distanceKm: Math.round(distKm * 10) / 10, isWithinRadius: distKm <= ah.radius_km };
+    }
+  }
+  return closest;
+}
+
+/* ==========================================================================
+   AUTH ROUTES (Dedicated Head Admin & Area Head Logins)
    ========================================================================== */
 app.post('/api/auth/login', (req, res) => {
-  const { email, password, role } = req.body;
+  const { email = '', password = '', role = '' } = req.body;
+  const cleanEmail = email.trim().toLowerCase();
 
-  // Simple, robust mock authentication with standard civic roles
-  if ((email === 'admin@bbmp.gov.in' && password === 'admin123') ||
-      (email === 'engineer@bbmp.gov.in' && password === 'admin123') ||
-      (email === 'smartcity@karnataka.gov.in' && password === 'admin123') ||
-      (password === 'admin123')) {
+  // 1. Check for Head Admin (Top Head)
+  if (
+    cleanEmail === 'head.admin@bbmp.gov.in' ||
+    cleanEmail === 'admin@bbmp.gov.in' ||
+    cleanEmail === 'commissioner@bbmp.gov.in' ||
+    role === 'HEAD_ADMIN' ||
+    cleanEmail.includes('head')
+  ) {
+    if (password === 'admin123' || password === 'head123' || !password) {
+      return res.json({
+        success: true,
+        token: 'jwt-head-admin-token-' + Date.now(),
+        user: HEAD_ADMIN
+      });
+    }
+  }
+
+  // 2. Check for Area Heads (Zonal Administrators)
+  const matchedAreaHead = AREA_HEADS.find(ah =>
+    ah.email.toLowerCase() === cleanEmail ||
+    ah.zone.toLowerCase() === (req.body.zone || '').toLowerCase() ||
+    cleanEmail.includes(ah.zone.toLowerCase())
+  );
+
+  if (matchedAreaHead) {
+    if (password === 'admin123' || password === 'area123' || !password) {
+      return res.json({
+        success: true,
+        token: 'jwt-area-head-token-' + Date.now(),
+        user: {
+          ...matchedAreaHead,
+          role: 'AREA_HEAD',
+          agency: 'BBMP Zonal Engineering Wing'
+        }
+      });
+    }
+  }
+
+  // 3. Fallback generic testing login
+  if (password === 'admin123') {
+    if (role === 'AREA_HEAD') {
+      const defaultAreaHead = AREA_HEADS[0];
+      return res.json({
+        success: true,
+        token: 'jwt-area-head-token-' + Date.now(),
+        user: { ...defaultAreaHead, role: 'AREA_HEAD' }
+      });
+    }
     return res.json({
       success: true,
-      token: 'jwt-civic-token-' + Date.now(),
-      user: {
-        id: 'USR-GOV-901',
-        name: email.includes('engineer') ? 'Er. Rajesh Patil (Executive Engineer)' : 'Dr. B. K. Shivakumar (BBMP Chief Infrastructure Officer)',
-        email: email || 'admin@bbmp.gov.in',
-        role: email.includes('engineer') ? 'Ward Engineer' : 'Municipal Administrator',
-        agency: 'BBMP / Karnataka Urban Infrastructure Development',
-        jurisdiction: 'Bruhat Bengaluru Mahanagara Palike (All 198 Wards)',
-        badge: 'SUPER_ADMIN'
-      }
+      token: 'jwt-head-admin-token-' + Date.now(),
+      user: HEAD_ADMIN
     });
   }
 
   return res.status(401).json({
     success: false,
-    message: 'Invalid administrative credentials. Use admin@bbmp.gov.in / admin123'
+    message: 'Invalid credentials. For Head Admin use head.admin@bbmp.gov.in / admin123. For Area Head use area.south@bbmp.gov.in / admin123.'
+  });
+});
+
+app.get('/api/area-heads', (req, res) => {
+  const areaHeadsWithStats = AREA_HEADS.map(ah => {
+    const assignedDefects = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.status !== 'Resolved');
+    const resolvedDefects = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.status === 'Resolved');
+    const pendingApproval = defectsData.filter(d => d.assigned_area_head?.id === ah.id && d.workflow_stage === 'PENDING_HEAD_APPROVAL');
+
+    return {
+      ...ah,
+      active_assigned_count: assignedDefects.length,
+      resolved_count: resolvedDefects.length,
+      pending_approval_count: pendingApproval.length
+    };
+  });
+
+  res.json({
+    success: true,
+    area_heads: areaHeadsWithStats
   });
 });
 
@@ -300,7 +478,11 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
     },
     image_url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
     created_at: new Date().toISOString(),
-    status: 'Reported',
+    status: 'Reported (Pending Head Distribution)',
+    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
+    head_admin_forwarded: true,
+    assigned_area_head: null,
+    head_admin_approved: false,
     assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
@@ -500,7 +682,11 @@ app.post('/api/defects/report', async (req, res) => {
     vehicle_telemetry: vehicle_telemetry || null,
     image_url: image_data || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
     created_at: new Date().toISOString(),
-    status: 'Reported',
+    status: 'Reported (Pending Head Distribution)',
+    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
+    head_admin_forwarded: true,
+    assigned_area_head: null,
+    head_admin_approved: false,
     assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
@@ -606,7 +792,11 @@ app.post('/api/vehicle/telemetry', (req, res) => {
     },
     image_url: defect_details.image_url || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
     created_at: new Date().toISOString(),
-    status: 'Reported',
+    status: 'Reported (Pending Head Distribution)',
+    workflow_stage: 'AWAITING_HEAD_ASSIGNMENT',
+    head_admin_forwarded: true,
+    assigned_area_head: null,
+    head_admin_approved: false,
     assigned_to: null,
     verification_count: 1,
     duplicates_prevented: 0
@@ -643,6 +833,207 @@ app.patch('/api/defects/:id', (req, res) => {
     success: true,
     message: `Ticket #${defect.ticket_code} updated to status "${defect.status}"`,
     defect
+  });
+});
+
+/* ==========================================================================
+   WORKFLOW ROUTES: HEAD ADMIN DISTRIBUTION & AREA HEAD REPAIR VERIFICATION
+   ========================================================================== */
+
+// Head Admin Distributes Problem to Area Head
+app.post('/api/defects/:id/assign-area-head', (req, res) => {
+  const { id } = req.params;
+  const { area_head_id, area_head_name, zone, notes, target_sla_hours } = req.body;
+
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  const selectedAreaHead = AREA_HEADS.find(ah => ah.id === area_head_id) || {
+    id: area_head_id || 'AREA-HEAD-01',
+    name: area_head_name || 'Zonal Area Head',
+    zone: zone || defect.location?.zone || 'South'
+  };
+
+  defect.assigned_area_head = {
+    id: selectedAreaHead.id,
+    name: selectedAreaHead.name,
+    title: selectedAreaHead.title || `Executive Engineer - ${selectedAreaHead.zone} Zone`,
+    email: selectedAreaHead.email,
+    zone: selectedAreaHead.zone,
+    assigned_at: new Date().toISOString(),
+    distribution_notes: notes || 'Assigned by Head Admin based on territorial radius.',
+    target_sla_hours: target_sla_hours || defect.target_sla_hours || 24
+  };
+
+  defect.status = 'Assigned to Area Head';
+  defect.workflow_stage = 'ASSIGNED_TO_AREA_HEAD';
+
+  res.json({
+    success: true,
+    message: `Ticket #${defect.ticket_code} successfully distributed to Area Head ${defect.assigned_area_head.name} (${defect.assigned_area_head.zone} Zone).`,
+    defect
+  });
+});
+
+// Area Head Starts Work (Dispatches Workers)
+app.post('/api/defects/:id/start-repair', (req, res) => {
+  const { id } = req.params;
+  const { field_crew } = req.body;
+
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  defect.status = 'In Progress';
+  defect.workflow_stage = 'IN_PROGRESS';
+  defect.field_crew = field_crew || (defect.assigned_area_head ? `${defect.assigned_area_head.zone} Zone Rapid Paving Unit #1` : 'Municipal Field Crew');
+  defect.repair_started_at = new Date().toISOString();
+
+  res.json({
+    success: true,
+    message: `Workers dispatched for Ticket #${defect.ticket_code}. Status: In Progress.`,
+    defect
+  });
+});
+
+// Area Head Completes Repair & Submits After Photo to Head Admin
+app.post('/api/defects/:id/submit-completion', (req, res) => {
+  const { id } = req.params;
+  const {
+    after_image_url = 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80',
+    completed_by_workers = 'Zonal Rapid Asphalt Paving Gang',
+    repair_notes = 'Pothole excavated, tack coated, packed with dense bituminous macadam and vibratory roller leveled.'
+  } = req.body;
+
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  const completedAt = new Date().toISOString();
+  const durationStr = formatDurationBetween(defect.created_at, completedAt);
+
+  defect.completion_details = {
+    after_image_url,
+    completed_at: completedAt,
+    completed_by_workers,
+    repair_notes,
+    duration_str: durationStr
+  };
+
+  defect.status = 'Pending Head Approval';
+  defect.workflow_stage = 'PENDING_HEAD_APPROVAL';
+  defect.head_admin_approved = false;
+
+  res.json({
+    success: true,
+    message: `Repair completed and After photo transmitted to Head Admin for Ticket #${defect.ticket_code}. Awaiting final authorization.`,
+    defect
+  });
+});
+
+// Head Admin Verifies Before/After Evidence & Approves for Public Release
+app.post('/api/defects/:id/approve-completion', (req, res) => {
+  const { id } = req.params;
+  const { remarks = 'Surface leveling & Before/After photos verified. Approved for public traffic.' } = req.body;
+
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  const resolvedAt = new Date().toISOString();
+  defect.status = 'Resolved';
+  defect.workflow_stage = 'RESOLVED';
+  defect.head_admin_approved = true;
+  defect.resolved_at = resolvedAt;
+  defect.duration_took_str = defect.completion_details?.duration_str || formatDurationBetween(defect.created_at, resolvedAt);
+
+  defect.approved_by = {
+    id: HEAD_ADMIN.id,
+    name: HEAD_ADMIN.name,
+    role: 'Chief Infrastructure Head',
+    approved_at: resolvedAt,
+    remarks
+  };
+
+  res.json({
+    success: true,
+    message: `Ticket #${defect.ticket_code} officially approved by Chief Infrastructure Head. It is now published to the Public Civic Issues Tracker for citizens to view!`,
+    defect
+  });
+});
+
+// Head Admin Rejects Completion (Sends back to Area Head with rework notes)
+app.post('/api/defects/:id/reject-completion', (req, res) => {
+  const { id } = req.params;
+  const { remarks = 'Re-work required: Surface compaction uneven or incomplete.' } = req.body;
+
+  const defect = defectsData.find(d => d.id === id || d.ticket_code === id);
+  if (!defect) {
+    return res.status(404).json({ success: false, message: 'Defect ticket not found' });
+  }
+
+  defect.status = 'Assigned to Area Head (Re-work Required)';
+  defect.workflow_stage = 'ASSIGNED_TO_AREA_HEAD';
+  defect.rework_notes = remarks;
+  defect.head_admin_approved = false;
+
+  res.json({
+    success: true,
+    message: `Ticket #${defect.ticket_code} returned to Area Head for re-work.`,
+    defect
+  });
+});
+
+// Public Civic Tracker: Returns Pending vs Completed (Approved) Problems Stack
+app.get('/api/defects/public-tracker', (req, res) => {
+  const { zone, severity, search } = req.query;
+
+  let allDefects = [...defectsData];
+
+  // Optional Filtering
+  if (zone && zone !== 'all') {
+    allDefects = allDefects.filter(d =>
+      (d.location?.zone || '').toLowerCase() === zone.toLowerCase() ||
+      (d.assigned_area_head?.zone || '').toLowerCase() === zone.toLowerCase()
+    );
+  }
+
+  if (severity && severity !== 'all') {
+    allDefects = allDefects.filter(d => (d.severity || '').toLowerCase() === severity.toLowerCase());
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    allDefects = allDefects.filter(d =>
+      (d.title || '').toLowerCase().includes(q) ||
+      (d.description || '').toLowerCase().includes(q) ||
+      (d.ticket_code || '').toLowerCase().includes(q) ||
+      (d.location?.address || '').toLowerCase().includes(q) ||
+      (d.location?.ward_name || '').toLowerCase().includes(q)
+    );
+  }
+
+  // 1. Pending Problems (all non-resolved, sorted LATEST on top like a stack)
+  const pending = allDefects
+    .filter(d => d.status !== 'Resolved' && !d.head_admin_approved)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // 2. Completed Problems (ONLY those approved by Head Admin, sorted LATEST completed on top)
+  const completed = allDefects
+    .filter(d => d.status === 'Resolved' && d.head_admin_approved)
+    .sort((a, b) => new Date(b.resolved_at || b.created_at) - new Date(a.resolved_at || a.created_at));
+
+  res.json({
+    success: true,
+    total_pending: pending.length,
+    total_completed: completed.length,
+    pending,
+    completed
   });
 });
 

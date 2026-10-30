@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldAlert, Activity, Award, LogOut, Home } from 'lucide-react';
+import { ShieldAlert, Activity, Award, LogOut, Home, Layers, Lock, CheckCircle2 } from 'lucide-react';
 
 export default function Navbar({ currentView, onSelectView, govUser, onLogout, isLoginPage, onNavigate }) {
   return (
@@ -34,47 +34,84 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
           </div>
 
           {/* SDG Badge - SDGs 9 & 11 */}
-          <div className="hidden lg:flex items-center space-x-2 text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+          <div className="hidden xl:flex items-center space-x-2 text-[11px] bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
             <Award className="w-4 h-4 text-emerald-400" />
             <span className="text-slate-300">
               <strong className="text-emerald-400">SDG 9</strong> Resilient Infra | <strong className="text-amber-400">SDG 11</strong> Smart Cities
             </span>
           </div>
 
-          {/* Navigation Controls: Clean & uncluttered */}
+          {/* Navigation Controls */}
           {!isLoginPage ? (
-            <div className="flex items-center space-x-2">
-              {currentView && currentView !== 'home' ? (
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              
+              {/* Home button if viewing subview */}
+              {currentView && currentView !== 'home' && (
                 <button
                   type="button"
                   onClick={() => onSelectView('home')}
-                  className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 hover:border-slate-700 transition shadow-sm cursor-pointer"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 hover:border-slate-700 transition shadow-sm cursor-pointer"
                 >
                   <Home className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Main Dashboard</span>
+                  <span className="hidden sm:inline">Main Dashboard</span>
                 </button>
-              ) : (
-                <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="hidden sm:inline">Platform Active</span>
-                </div>
               )}
+
+              {/* Public Issues Tracker Button */}
+              <button
+                type="button"
+                onClick={() => onSelectView('tracker')}
+                className={`flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer border ${
+                  currentView === 'tracker'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/25'
+                    : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border-emerald-500/40'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Civic Tracker (Before/After)</span>
+              </button>
+
+              {/* Official Officer Portal Login Link */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigate) onNavigate('/login');
+                }}
+                className="flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 text-xs font-bold border border-purple-500/40 transition shadow-sm cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Officer Login</span>
+              </button>
+
             </div>
           ) : (
             /* On /login route */
             <div className="flex items-center space-x-3">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center space-x-1.5">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center space-x-1.5">
                 <ShieldAlert className="w-3.5 h-3.5" />
-                <span>BBMP Authority Portal (/login)</span>
+                <span>
+                  {govUser ? (govUser.role === 'HEAD_ADMIN' ? '👑 Head Admin Command' : '👷 Area Head Workspace') : 'Authority Portal'}
+                </span>
               </span>
 
-              {govUser && (
+              {govUser ? (
                 <button
+                  type="button"
                   onClick={onLogout}
-                  className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 text-xs font-medium border border-slate-700 transition"
+                  className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 text-xs font-medium border border-slate-800 transition"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Exit Portal</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onNavigate) onNavigate('/');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition"
+                >
+                  ← Return Home
                 </button>
               )}
             </div>

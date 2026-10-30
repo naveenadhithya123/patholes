@@ -4,6 +4,7 @@ import LandingDashboard from './components/LandingDashboard';
 import MapViewPage from './components/MapViewPage';
 import CitizenCameraPortal from './components/CitizenCameraPortal';
 import FindByAreaView from './components/FindByAreaView';
+import PublicCivicTracker from './components/PublicCivicTracker';
 import GovernmentPortal from './components/GovernmentPortal';
 
 export default function App() {
@@ -12,7 +13,7 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
 
   // Active subview on the main platform:
-  // 'home' (3-Button Clean Dashboard) | 'map' | 'capture' | 'area'
+  // 'home' | 'map' | 'capture' | 'tracker' | 'area'
   const [currentView, setCurrentView] = useState('home');
 
   const [govUser, setGovUser] = useState(() => {
@@ -46,6 +47,14 @@ export default function App() {
     setCurrentPath(path);
     if (path === '/') {
       setCurrentView('home');
+    }
+  };
+
+  const handleSelectView = (view) => {
+    setCurrentView(view);
+    if (currentPath !== '/') {
+      window.history.pushState({}, '', '/');
+      setCurrentPath('/');
     }
   };
 
@@ -107,7 +116,7 @@ export default function App() {
       {/* Top Navbar: Brand Infra AI */}
       <Navbar
         currentView={currentView}
-        onSelectView={setCurrentView}
+        onSelectView={handleSelectView}
         govUser={govUser}
         onLogout={handleLogout}
         isLoginPage={isLoginPage}
@@ -145,6 +154,11 @@ export default function App() {
             onBack={() => setCurrentView('home')}
             onDefectReported={handleDefectReported}
           />
+        ) : currentView === 'tracker' ? (
+          <PublicCivicTracker
+            onBack={() => setCurrentView('home')}
+            onSelectView={setCurrentView}
+          />
         ) : currentView === 'area' ? (
           <FindByAreaView
             onBack={() => setCurrentView('home')}
@@ -152,7 +166,7 @@ export default function App() {
           />
         ) : (
           <LandingDashboard
-            onSelectView={setCurrentView}
+            onSelectView={handleSelectView}
             defects={defects}
           />
         )}
