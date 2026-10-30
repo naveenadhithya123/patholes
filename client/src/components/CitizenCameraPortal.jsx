@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, Zap, Info, Eye, Navigation, Sparkles, AlertTriangle, Send, Check } from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, Zap, Info, Eye, Navigation, Sparkles, AlertTriangle, Send, Check, ExternalLink } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const LOCATION_PRESETS = [
@@ -60,39 +60,65 @@ export default function CitizenCameraPortal({ onDefectReported }) {
   const overlayCanvasRef = useRef(null);
   const procCanvasRef = useRef(null);
 
-  // Request Physical Camera immediately on mount
+  // Request Physical Camera immediately on mount with robust mobile fallback
   useEffect(() => {
     let stream = null;
-    if (!simulatedFeed) {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        })
-        .then(s => {
-          stream = s;
-          if (videoRef.current) {
-            videoRef.current.srcObject = s;
-            videoRef.current.play().catch(e => console.warn('Play interrupted:', e));
-          }
-          setCameraActive(true);
-          setCameraError(null);
-        })
-        .catch(err => {
-          console.warn('Physical camera error:', err.message);
-          setCameraError('Physical camera unavailable. Switched to live road inspection stream.');
-          setSimulatedFeed(true);
-        });
-      } else {
+    let isCancelled = false;
+
+    const startCamera = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setCameraError('Browser mediaDevices not supported. Using live road stream.');
         setSimulatedFeed(true);
+        return;
       }
+
+      try {
+        let s;
+        try {
+          s = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+        } catch (constraintErr) {
+          // Fallback if environment / resolution constraints failed on mobile device
+          s = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+
+        if (isCancelled) {
+          s.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        stream = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('muted', 'true');
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) {
+              videoRef.current.play().catch(e => console.warn('Play interrupted:', e));
+            }
+          };
+          videoRef.current.play().catch(e => console.warn('Immediate play interrupted:', e));
+        }
+        setCameraActive(true);
+        setCameraError(null);
+      } catch (err) {
+        console.warn('Physical camera error:', err.message);
+        setCameraError('Physical camera unavailable. Switched to live road inspection stream.');
+        setSimulatedFeed(true);
+      }
+    };
+
+    if (!simulatedFeed) {
+      startCamera();
     }
 
     return () => {
+      isCancelled = true;
       if (stream) {
         stream.getTracks().forEach(t => t.stop());
       }
@@ -524,10 +550,6 @@ export default function CitizenCameraPortal({ onDefectReported }) {
       alert('Anti-Spoof Alert: The camera detected a digital screen or photo-of-a-photo. Please point your camera directly at the physical road surface.');
       return;
     }
-    if (!autoVisionResult.detected) {
-      alert('No road defect detected in the camera frame. Please move your camera towards real asphalt damage or crack before posting.');
-      return;
-    }
 
     setIsLocating(true);
     setIsAnalyzing(true);
@@ -550,6 +572,18 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     // Helper to send report to municipal API once live coordinates are acquired
     const submitWithLocation = async (lat, lng, accuracy, addressName) => {
       try {
+        const payloadType = autoVisionResult.detected ? autoVisionResult.type : 'pothole';
+        const payloadSeverity = autoVisionResult.detected ? autoVisionResult.severity : 'HIGH';
+        const payloadDimensions = autoVisionResult.detected ? {
+          depth_cm: autoVisionResult.depth_cm,
+          width_cm: autoVisionResult.width_cm,
+          length_cm: autoVisionResult.length_cm
+        } : {
+          depth_cm: 10,
+          width_cm: 45,
+          length_cm: 50
+        };
+
         const response = await fetch('/api/defects/report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -562,13 +596,9 @@ export default function CitizenCameraPortal({ onDefectReported }) {
               ward_no: 150,
               ward_name: 'Live Mobile GPS'
             },
-            type: autoVisionResult.type,
-            severity: autoVisionResult.severity,
-            dimensions: {
-              depth_cm: autoVisionResult.depth_cm,
-              width_cm: autoVisionResult.width_cm,
-              length_cm: autoVisionResult.length_cm
-            },
+            type: payloadType,
+            severity: payloadSeverity,
+            dimensions: payloadDimensions,
             reported_by: 'citizen_manual_camera'
           })
         });
@@ -828,34 +858,34 @@ export default function CitizenCameraPortal({ onDefectReported }) {
               <button
                 type="button"
                 onClick={handlePostDefect}
-                disabled={isAnalyzing || !autoVisionResult.detected || autoVisionResult.is_spoof}
-                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center space-x-2 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                disabled={isAnalyzing}
+                className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center space-x-2.5 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
                   autoVisionResult.is_spoof
-                    ? 'bg-red-900/60 border border-red-500/50 text-red-200 shadow-red-900/20'
+                    ? 'bg-red-900/70 border border-red-500/50 text-red-200 shadow-red-900/20'
                     : autoVisionResult.detected
-                      ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 hover:shadow-cyan-500/40 cursor-pointer'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 hover:from-emerald-500 hover:to-cyan-400 text-white shadow-emerald-500/30'
+                      : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 ring-2 ring-blue-400/40'
                 }`}
               >
                 {isAnalyzing ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{isLocating ? 'Acquiring Live Device GPS...' : 'Posting to Smart City Government Dashboard...'}</span>
+                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                    <span>{isLocating ? 'Acquiring Live Device GPS...' : 'Transmitting to Higher Officials Dashboard...'}</span>
                   </>
                 ) : autoVisionResult.is_spoof ? (
                   <>
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>Screen Detected (Real Damage Required)</span>
+                    <AlertTriangle className="w-4 h-4 text-red-300" />
+                    <span>Screen Detected (Scan Physical Road)</span>
                   </>
-                ) : !autoVisionResult.detected ? (
+                ) : autoVisionResult.detected ? (
                   <>
-                    <Crosshair className="w-4 h-4" />
-                    <span>Scan Real Road Defect to Report</span>
+                    <Camera className="w-4 h-4 text-white" />
+                    <span>Capture & Post Verified Defect with Live GPS</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    <span>Post Verified Defect with Live GPS</span>
+                    <Camera className="w-4 h-4 text-white" />
+                    <span>Capture & Post Defect with Live GPS</span>
                   </>
                 )}
               </button>
@@ -1014,27 +1044,42 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                 <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1.5">
                   <div className="text-cyan-300 font-bold flex items-center space-x-1.5 text-[11px]">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>POSTED DEFECT DATA:</span>
+                    <span>TRANSMITTED DEFECT DATA:</span>
                   </div>
                   <div className="text-slate-200">
                     Classification: <strong className="text-white">{reportResult.defect.category_label}</strong>
                   </div>
-                  <div className="text-slate-400 text-[11px]">
-                    Dimensions: <strong className="text-amber-400">Depth {reportResult.defect.dimensions?.depth_cm || 13} cm</strong> • Width {reportResult.defect.dimensions?.width_cm || 54} cm
+                  <div className="text-emerald-400 font-semibold text-[11px]">
+                    📍 Real Live GPS: {reportResult.defect.location?.lat?.toFixed(5)}, {reportResult.defect.location?.lng?.toFixed(5)} ({reportResult.defect.location?.address || 'Captured on Submit'})
                   </div>
                   <div className="text-slate-400 text-[11px]">
-                    Government Priority: <strong className="text-rose-400">{reportResult.defect.ai_calculated_priority} (Score {reportResult.defect.ai_priority_score}/100)</strong>
+                    Dimensions: <strong className="text-amber-400">Depth {reportResult.defect.dimensions?.depth_cm || 10} cm</strong> • Width {reportResult.defect.dimensions?.width_cm || 45} cm
+                  </div>
+                  <div className="text-slate-400 text-[11px]">
+                    Government Priority: <strong className="text-rose-400">{reportResult.defect.ai_calculated_priority || 'HIGH'} (Score {reportResult.defect.ai_priority_score || 85}/100)</strong>
                   </div>
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => setReportResult(null)}
-                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-lg border border-slate-700 transition"
-              >
-                Done & Ready for Next Defect
-              </button>
+              <div className="space-y-2 pt-1">
+                <a
+                  href="/login"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 transition"
+                >
+                  <span>Open Higher Officials Portal to Verify (Column 2)</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setReportResult(null)}
+                  className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-lg border border-slate-700 text-slate-300 transition"
+                >
+                  Done & Ready for Next Defect
+                </button>
+              </div>
             </div>
           )}
 

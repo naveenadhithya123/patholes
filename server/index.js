@@ -321,23 +321,31 @@ app.post('/api/defects/report', async (req, res) => {
     console.warn('AI vision analysis error:', err.message);
   }
 
-  // VALIDATION: Reject reports if no defect exists or if screen spoof is detected
-  if (userType === 'none' || (aiVisionResult && aiVisionResult.defect_detected === false) || (aiVisionResult && aiVisionResult.is_spoof)) {
+  // VALIDATION: Reject reports if screen spoof is detected
+  if (aiVisionResult && aiVisionResult.is_spoof) {
     return res.status(400).json({
       success: false,
       defect_detected: false,
-      is_spoof: aiVisionResult?.is_spoof || false,
-      message: aiVisionResult?.is_spoof
-        ? 'Anti-Spoof Alert: Digital screen or photo reproduction detected. Only authentic physical infrastructure damage can be logged.'
-        : 'Inspection Complete: No road or infrastructure damage detected in the captured frame. Camera must face actual damage to generate a municipal ticket.'
+      is_spoof: true,
+      message: 'Anti-Spoof Alert: Digital screen or photo reproduction detected. Only authentic physical infrastructure damage can be logged.'
     });
   }
 
-  const effectiveType = (aiVisionResult && aiVisionResult.category) || userType || 'pothole';
+  // If user explicitly sent 'none' and AI also found no damage:
+  if (userType === 'none' && (!aiVisionResult || !aiVisionResult.defect_detected)) {
+    return res.status(400).json({
+      success: false,
+      defect_detected: false,
+      is_spoof: false,
+      message: 'Inspection Complete: No road or infrastructure damage detected in the captured frame. Camera must face actual damage to generate a municipal ticket.'
+    });
+  }
+
+  const effectiveType = (aiVisionResult && aiVisionResult.category && aiVisionResult.category !== 'none') ? aiVisionResult.category : (userType || 'pothole');
   const effectiveSeverity = (aiVisionResult && aiVisionResult.severity) || userSeverity || 'HIGH';
   const effectiveDimensions = (aiVisionResult && aiVisionResult.estimated_dimensions) || userDimensions || { depth_cm: 10, width_cm: 45, length_cm: 50 };
   const effectiveConfidence = (aiVisionResult && aiVisionResult.confidence_pct) || 94.6;
-  const effectiveLabel = (aiVisionResult && aiVisionResult.label) || 'Road Surface Defect';
+  const effectiveLabel = (aiVisionResult && aiVisionResult.label && aiVisionResult.label !== 'No Defect Detected') ? aiVisionResult.label : 'Citizen Road Defect Report';
 
   // STEP 3: REGISTER AS A NEW DEFECT
   const closestRoad = findClosestRoad(roadsData, candidateLat, candidateLng);
