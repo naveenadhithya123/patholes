@@ -18,17 +18,17 @@ export default function CitizenCameraPortal({ onDefectReported }) {
   const [simulatedFeed, setSimulatedFeed] = useState(false); // real physical camera by default
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(-1);
 
-  // Real Device GPS State (strictly authentic, zero hardcoded numbers!)
+  // Real Device GPS State (Requested On-Demand ONLY when submitting!)
   const [gpsLocation, setGpsLocation] = useState({
     acquired: false,
     lat: null,
     lng: null,
-    address: 'Awaiting device GPS permission...',
+    address: 'Live coordinates will be captured on submit',
     ward_no: null,
     ward_name: '',
     accuracy: null,
     isRealDeviceGPS: false,
-    status: 'requesting', // 'requesting' | 'acquired' | 'denied' | 'preset'
+    status: 'idle', // 'idle' | 'requesting' | 'acquired' | 'denied' | 'preset'
     errorMessage: null,
     lastUpdated: null
   });
@@ -99,85 +99,9 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     };
   }, [simulatedFeed]);
 
-  // Actively request real device GPS on load and continuously track real-time position
-  useEffect(() => {
-    let watchId = null;
-
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      setIsLocating(true);
-      setGpsLocation(prev => ({
-        ...prev,
-        status: 'requesting',
-        address: 'Prompting for location permission...'
-      }));
-
-      // watchPosition actively requests permission from the mobile browser and updates whenever device moves!
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          setIsLocating(false);
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const acc = Math.round(pos.coords.accuracy * 10) / 10;
-          
-          setGpsLocation({
-            acquired: true,
-            lat: lat,
-            lng: lng,
-            accuracy: acc,
-            address: `Live Device Coordinates (±${acc}m)`,
-            ward_no: 150,
-            ward_name: 'Live Mobile GPS',
-            isRealDeviceGPS: true,
-            status: 'acquired',
-            errorMessage: null,
-            lastUpdated: new Date().toLocaleTimeString()
-          });
-        },
-        (err) => {
-          setIsLocating(false);
-          console.warn('Device GPS error:', err.message);
-          let friendlyError = 'Location access disabled or unavailable.';
-          if (err.code === 1) {
-            friendlyError = 'Location permission denied in browser. Please enable location in site settings.';
-          } else if (err.code === 2) {
-            friendlyError = 'GPS position unavailable. Ensure device location is turned on.';
-          } else if (err.code === 3) {
-            friendlyError = 'GPS request timed out. Retrying satellite lock...';
-          }
-
-          setGpsLocation(prev => {
-            if (prev.status === 'preset') return prev;
-            return {
-              ...prev,
-              acquired: false,
-              status: 'denied',
-              address: friendlyError,
-              errorMessage: friendlyError
-            };
-          });
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 2000,
-          timeout: 12000
-        }
-      );
-    } else {
-      setGpsLocation(prev => ({
-        ...prev,
-        acquired: false,
-        status: 'denied',
-        address: 'Geolocation is not supported by your browser.',
-        errorMessage: 'Geolocation not supported.'
-      }));
-    }
-
-    return () => {
-      if (watchId !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, []);
+  // ON-DEMAND LOCATION POLICY:
+  // We do NOT prompt for GPS while the user is simply scanning or moving the camera.
+  // Location permission is queried strictly when the user clicks "Post Defect with Live GPS".
 
   // AUTOMATED REAL-TIME COMPUTER VISION ALGORITHM (OPENCV EDGE & CAVITY DETECTION)
   // Runs continuously on each camera frame.
@@ -524,59 +448,6 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     };
   }, [autoVisionResult, simulatedFeed]);
 
-  // Acquire Real GPS
-  const acquireRealGPS = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this device or browser.');
-      return;
-    }
-    setIsLocating(true);
-    setSelectedPresetIndex(-1);
-    setGpsLocation(prev => ({
-      ...prev,
-      status: 'requesting',
-      address: 'Requesting satellite coordinates from device GPS...'
-    }));
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsLocating(false);
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const acc = Math.round(pos.coords.accuracy * 10) / 10;
-        setGpsLocation({
-          acquired: true,
-          lat: lat,
-          lng: lng,
-          accuracy: acc,
-          address: `Live Device Coordinates (±${acc}m)`,
-          ward_no: 150,
-          ward_name: 'Live Mobile GPS',
-          isRealDeviceGPS: true,
-          status: 'acquired',
-          errorMessage: null,
-          lastUpdated: new Date().toLocaleTimeString()
-        });
-      },
-      (err) => {
-        setIsLocating(false);
-        let msg = 'Could not acquire device GPS: ' + err.message;
-        if (err.code === 1) {
-          msg = 'Location permission was denied. Please tap the lock icon in your browser address bar and enable Location access.';
-        }
-        alert(msg);
-        setGpsLocation(prev => ({
-          ...prev,
-          acquired: false,
-          status: 'denied',
-          errorMessage: msg,
-          address: msg
-        }));
-      },
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
-  };
-
   const handlePresetChange = (idx) => {
     setSelectedPresetIndex(idx);
     const preset = LOCATION_PRESETS[idx];
@@ -595,14 +466,60 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     });
   };
 
-  // POST DEFECT WITH LIVE LOCATION OF THE DEVICE
-  // Automatically posts the defect detected by the computer vision without any manual user inputs!
-  const handlePostDefect = async () => {
-    if (!gpsLocation.acquired || gpsLocation.lat === null || gpsLocation.lng === null) {
-      alert('GPS Coordinates Missing: Please enable device location in your browser or select a simulation corridor before posting.');
-      acquireRealGPS();
+  // Dedicated helper if citizen manually clicks Lock Device GPS beforehand
+  const acquireRealGPS = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
       return;
     }
+    setIsLocating(true);
+    setGpsLocation(prev => ({ ...prev, status: 'requesting' }));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const liveLat = pos.coords.latitude;
+        const liveLng = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy * 10) / 10;
+        setGpsLocation({
+          acquired: true,
+          lat: liveLat,
+          lng: liveLng,
+          accuracy: acc,
+          address: `Live Device Coordinates (±${acc}m)`,
+          ward_no: 150,
+          ward_name: 'Live Mobile GPS',
+          isRealDeviceGPS: true,
+          status: 'acquired',
+          errorMessage: null,
+          lastUpdated: new Date().toLocaleTimeString()
+        });
+        setIsLocating(false);
+      },
+      (err) => {
+        setIsLocating(false);
+        let msg = 'Live Device Location Required: ' + err.message;
+        if (err.code === 1) {
+          msg = 'Location permission was denied. Please allow location access in your browser settings.';
+        } else if (err.code === 2) {
+          msg = 'Device GPS unavailable. Please enable device location settings.';
+        }
+        alert(msg);
+        setGpsLocation(prev => ({
+          ...prev,
+          status: 'denied',
+          errorMessage: msg
+        }));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // POST DEFECT WITH LIVE LOCATION OF THE DEVICE
+  // ON-DEMAND GPS POLICY: Requests live location strictly when the user clicks this submit button!
+  const handlePostDefect = async () => {
     if (autoVisionResult.is_spoof) {
       alert('Anti-Spoof Alert: The camera detected a digital screen or photo-of-a-photo. Please point your camera directly at the physical road surface.');
       return;
@@ -612,11 +529,12 @@ export default function CitizenCameraPortal({ onDefectReported }) {
       return;
     }
 
+    setIsLocating(true);
     setIsAnalyzing(true);
     setReportResult(null);
 
+    // Capture snapshot from physical camera
     let snapshotDataUrl = null;
-
     if (!simulatedFeed && videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -629,52 +547,121 @@ export default function CitizenCameraPortal({ onDefectReported }) {
       snapshotDataUrl = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80';
     }
 
-    try {
-      const response = await fetch('/api/defects/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image_data: snapshotDataUrl,
-          location: {
-            lat: gpsLocation.lat,
-            lng: gpsLocation.lng,
-            address: gpsLocation.address,
-            ward_no: gpsLocation.ward_no,
-            ward_name: gpsLocation.ward_name
-          },
-          // Automatically detected by OpenCV algorithm
-          type: autoVisionResult.type,
-          severity: autoVisionResult.severity,
-          dimensions: {
-            depth_cm: autoVisionResult.depth_cm,
-            width_cm: autoVisionResult.width_cm,
-            length_cm: autoVisionResult.length_cm
-          },
-          reported_by: 'citizen_manual_camera'
-        })
-      });
+    // Helper to send report to municipal API once live coordinates are acquired
+    const submitWithLocation = async (lat, lng, accuracy, addressName) => {
+      try {
+        const response = await fetch('/api/defects/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_data: snapshotDataUrl,
+            location: {
+              lat: lat,
+              lng: lng,
+              address: addressName || `Live Device Coordinates (±${accuracy}m)`,
+              ward_no: 150,
+              ward_name: 'Live Mobile GPS'
+            },
+            type: autoVisionResult.type,
+            severity: autoVisionResult.severity,
+            dimensions: {
+              depth_cm: autoVisionResult.depth_cm,
+              width_cm: autoVisionResult.width_cm,
+              length_cm: autoVisionResult.length_cm
+            },
+            reported_by: 'citizen_manual_camera'
+          })
+        });
 
-      const data = await response.json();
-      setIsAnalyzing(false);
+        const data = await response.json();
+        setIsLocating(false);
+        setIsAnalyzing(false);
 
-      if (data.success) {
-        setReportResult(data);
-        if (!data.duplicate_detected) {
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.6 }
-          });
+        if (data.success) {
+          setReportResult(data);
+          if (!data.duplicate_detected) {
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.6 }
+            });
+          }
+          if (onDefectReported) onDefectReported(data);
+        } else {
+          alert(data.message || 'Inspection error.');
         }
-        if (onDefectReported) onDefectReported(data);
-      } else {
-        alert(data.message || 'Inspection error.');
+      } catch (err) {
+        setIsLocating(false);
+        setIsAnalyzing(false);
+        console.error('Submission failed:', err);
+        alert('Network error connecting to municipal API.');
       }
-    } catch (err) {
-      setIsAnalyzing(false);
-      console.error('Submission failed:', err);
-      alert('Network error connecting to municipal API.');
+    };
+
+    // If citizen selected a preset simulation corridor, submit immediately:
+    if (gpsLocation.status === 'preset' && gpsLocation.lat && gpsLocation.lng) {
+      await submitWithLocation(gpsLocation.lat, gpsLocation.lng, gpsLocation.accuracy, gpsLocation.address);
+      return;
     }
+
+    // If real device GPS was already locked, submit directly:
+    if (gpsLocation.acquired && gpsLocation.lat && gpsLocation.lng && gpsLocation.isRealDeviceGPS) {
+      await submitWithLocation(gpsLocation.lat, gpsLocation.lng, gpsLocation.accuracy, gpsLocation.address);
+      return;
+    }
+
+    // Otherwise, request fresh Live Device GPS from hardware right now on submit!
+    if (!navigator.geolocation) {
+      setIsLocating(false);
+      setIsAnalyzing(false);
+      alert('Geolocation is not supported by this device.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const liveLat = pos.coords.latitude;
+        const liveLng = pos.coords.longitude;
+        const acc = Math.round(pos.coords.accuracy * 10) / 10;
+
+        setGpsLocation({
+          acquired: true,
+          lat: liveLat,
+          lng: liveLng,
+          accuracy: acc,
+          address: `Live Device Coordinates (±${acc}m)`,
+          ward_no: 150,
+          ward_name: 'Live Mobile GPS',
+          isRealDeviceGPS: true,
+          status: 'acquired',
+          errorMessage: null,
+          lastUpdated: new Date().toLocaleTimeString()
+        });
+
+        await submitWithLocation(liveLat, liveLng, acc, `Live Device Coordinates (±${acc}m)`);
+      },
+      (err) => {
+        setIsLocating(false);
+        setIsAnalyzing(false);
+        let msg = 'Live Device Location Required: ' + err.message;
+        if (err.code === 1) {
+          msg = 'Location permission was denied. Please tap "Allow" when prompted by your browser to send your real-time GPS coordinates with this report.';
+        } else if (err.code === 2) {
+          msg = 'Device GPS unavailable. Please turn on Location in your phone settings.';
+        }
+        alert(msg);
+        setGpsLocation(prev => ({
+          ...prev,
+          status: 'denied',
+          errorMessage: msg
+        }));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0 // fresh satellite coordinates!
+      }
+    );
   };
 
   return (
@@ -706,48 +693,14 @@ export default function CitizenCameraPortal({ onDefectReported }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 bg-slate-950/80 px-3.5 py-2 rounded-xl border border-slate-800 text-xs">
-            {gpsLocation.status === 'acquired' ? (
-              <>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span className="text-slate-400 font-mono">Live Device GPS:</span>
-                <span className="text-emerald-400 font-mono font-semibold">
-                  {gpsLocation.lat.toFixed(5)}, {gpsLocation.lng.toFixed(5)}
-                </span>
-                <span className="text-slate-500 font-mono text-[10px]">
-                  (±{gpsLocation.accuracy}m)
-                </span>
-              </>
-            ) : gpsLocation.status === 'requesting' ? (
-              <>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></div>
-                <span className="text-amber-300 font-mono animate-pulse">
-                  Requesting Device GPS...
-                </span>
-              </>
-            ) : gpsLocation.status === 'preset' ? (
-              <>
-                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400"></div>
-                <span className="text-slate-400 font-mono">Simulated Corridor:</span>
-                <span className="text-cyan-400 font-mono font-semibold">
-                  {gpsLocation.lat.toFixed(4)}, {gpsLocation.lng.toFixed(4)}
-                </span>
-              </>
-            ) : (
-              <>
-                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                <span className="text-red-400 font-mono font-semibold">
-                  GPS Permission Required
-                </span>
-                <button
-                  type="button"
-                  onClick={acquireRealGPS}
-                  className="ml-2 px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold text-[10px] hover:bg-cyan-500/30"
-                >
-                  Enable GPS
-                </button>
-              </>
-            )}
+          <div className="flex items-center space-x-2 bg-slate-950/80 px-3.5 py-2 rounded-xl border border-slate-800 text-xs">
+            <div className={`w-2.5 h-2.5 rounded-full ${gpsLocation.acquired ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`}></div>
+            <span className="text-slate-400 font-mono">Location Mode:</span>
+            <span className={gpsLocation.acquired ? 'text-emerald-400 font-mono font-semibold' : 'text-cyan-300 font-mono font-semibold'}>
+              {gpsLocation.acquired
+                ? `${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`
+                : 'Auto-Tagged on Submit'}
+            </span>
           </div>
         </div>
       </div>
@@ -837,15 +790,15 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                       GPS: {gpsLocation.lat.toFixed(6)}, {gpsLocation.lng.toFixed(6)} (±{gpsLocation.accuracy}m)
                     </span>
                   ) : (
-                    <span className="text-amber-400 animate-pulse">
-                      GPS: Awaiting Device Coordinates...
+                    <span className="text-emerald-400">
+                      GPS: Auto-Captured on Submit
                     </span>
                   )}
                 </div>
                 <div className="text-slate-400">
                   {gpsLocation.acquired
-                    ? `${gpsLocation.ward_name} (Ward ${gpsLocation.ward_no || 150}) • ${gpsLocation.lastUpdated || 'Active'}`
-                    : (gpsLocation.address || 'Please allow location permission in browser')}
+                    ? `${gpsLocation.ward_name || 'Live Mobile GPS'} • ${gpsLocation.lastUpdated || 'Active'}`
+                    : '🛰️ Real-Time Device GPS captured when posting'}
                 </div>
               </div>
 
@@ -875,26 +828,19 @@ export default function CitizenCameraPortal({ onDefectReported }) {
               <button
                 type="button"
                 onClick={handlePostDefect}
-                disabled={isAnalyzing || !autoVisionResult.detected || autoVisionResult.is_spoof || !gpsLocation.acquired}
+                disabled={isAnalyzing || !autoVisionResult.detected || autoVisionResult.is_spoof}
                 className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center space-x-2 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  !gpsLocation.acquired
-                    ? 'bg-amber-900/40 border border-amber-500/40 text-amber-200'
-                    : autoVisionResult.is_spoof
-                      ? 'bg-red-900/60 border border-red-500/50 text-red-200 shadow-red-900/20'
-                      : autoVisionResult.detected
-                        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 hover:shadow-cyan-500/40'
-                        : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  autoVisionResult.is_spoof
+                    ? 'bg-red-900/60 border border-red-500/50 text-red-200 shadow-red-900/20'
+                    : autoVisionResult.detected
+                      ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 hover:shadow-cyan-500/40 cursor-pointer'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
                 }`}
               >
                 {isAnalyzing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Posting to Smart City Government Dashboard...</span>
-                  </>
-                ) : !gpsLocation.acquired ? (
-                  <>
-                    <Navigation className="w-4 h-4 animate-pulse" />
-                    <span>Waiting for Real Device GPS Lock...</span>
+                    <span>{isLocating ? 'Acquiring Live Device GPS...' : 'Posting to Smart City Government Dashboard...'}</span>
                   </>
                 ) : autoVisionResult.is_spoof ? (
                   <>
@@ -954,8 +900,8 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                     {gpsLocation.lat.toFixed(5)}, {gpsLocation.lng.toFixed(5)}
                   </span>
                 ) : (
-                  <span className="text-amber-400 animate-pulse">
-                    {gpsLocation.status === 'requesting' ? 'Requesting GPS...' : 'Permission Required'}
+                  <span className="text-emerald-400">
+                    {isLocating ? 'Acquiring Live GPS...' : 'Auto-captured on Submit'}
                   </span>
                 )}
               </div>
@@ -968,9 +914,9 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                 )}
               </div>
               <div className="flex justify-between text-slate-300">
-                <span>Location Status:</span>
-                <span className={gpsLocation.isRealDeviceGPS ? 'text-emerald-400 font-semibold' : (gpsLocation.acquired ? 'text-cyan-400' : 'text-amber-400')}>
-                  {gpsLocation.isRealDeviceGPS ? '🛰️ Live Mobile Hardware GPS' : (gpsLocation.status === 'preset' ? 'Simulation Corridor' : 'Pending Permission')}
+                <span>Location Mode:</span>
+                <span className={gpsLocation.isRealDeviceGPS ? 'text-emerald-400 font-semibold' : (gpsLocation.acquired ? 'text-cyan-400' : 'text-slate-300')}>
+                  {gpsLocation.isRealDeviceGPS ? '🛰️ Live Mobile Hardware GPS' : (gpsLocation.status === 'preset' ? 'Simulation Corridor' : 'On-Demand (Captured on Submit)')}
                 </span>
               </div>
               <div className="flex justify-between text-slate-300">
