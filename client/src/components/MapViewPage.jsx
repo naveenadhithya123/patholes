@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Search,
   X,
-  Gauge,
   CheckCircle2,
   AlertCircle,
   Compass,
@@ -88,13 +87,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const searchInputRef = useRef(null);
 
-  // 4. Test Scenario Selector:
-  // 'case1_direct_faster' -> 1 Pothole: Direct 10m (9m drive + 1m crawl) vs Detour 11m -> System prefers Direct!
-  // 'case2_detour_faster' -> 3 Potholes: Direct 12m (9m drive + 3m crawl) vs Detour 11m -> System prefers Detour!
-  // 'case3_no_alternative' -> Only 1 Physical Road Exists -> System prefers Direct!
-  const [testScenario, setTestScenario] = useState('case1_direct_faster');
-
-  // 5. Active Selected Route: 'direct' or 'safe'
+  // 4. Active Selected Route: 'direct' or 'safe'
   const [activeRoute, setActiveRoute] = useState('direct');
 
   // 6. Real Road Network Coordinates (from OSRM Driving Engine)
@@ -344,7 +337,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
   }, []);
 
   // -------------------------------------------------------------------------
-  // INTELLIGENT ETA ENGINE: Enforces the User's Two Cases Strictly
+  // INTELLIGENT ETA ENGINE: Automatically evaluates shortest real road ETA
   // -------------------------------------------------------------------------
   const calculatedRoutes = useMemo(() => {
     if (!routingData || !routingData.primaryPath || routingData.primaryPath.length === 0) {
@@ -353,89 +346,25 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
 
     const primaryPath = routingData.primaryPath;
     const altPath = routingData.altPath;
+    const hasAlt = !!altPath && routingData.hasAlternativeRoad;
 
-    // Place the Critical Potholes DIRECTLY ON THE REAL ROAD COORDINATES
-    let activeDefects = [];
-    let potholeCount = 1;
-    let delayMin = 1.0;
+    // Detect defects along route or place 1 critical road defect along primary asphalt route
+    const ptIdx = Math.floor(primaryPath.length * 0.45);
+    const [pLat, pLng] = primaryPath[ptIdx];
+    const activeDefects = [
+      {
+        id: 'road-pothole-1',
+        ticket_code: 'INFRA-P1-01',
+        severity: 'CRITICAL',
+        category_label: 'Severe Pothole Cavity on Asphalt Road',
+        location: { lat: pLat, lng: pLng, address: `Roadway approaching ${destination.name}` },
+        dimensions: { depth_cm: 15, width_cm: 58 },
+        delaySeconds: 60
+      }
+    ];
 
-    if (testScenario === 'case1_direct_faster') {
-      // User's Exact Example: 1 Pothole on Road (+1 min delay)
-      // Direct: 9 mins drive + 1 min delay = 10 mins.
-      // Detour: 11 mins drive.
-      // Direct wins (10 mins < 11 mins)!
-      potholeCount = 1;
-      delayMin = 1.0;
-      const ptIdx = Math.floor(primaryPath.length * 0.45);
-      const [pLat, pLng] = primaryPath[ptIdx];
-      activeDefects = [
-        {
-          id: 'road-pothole-1',
-          ticket_code: 'INFRA-P1-01',
-          severity: 'CRITICAL',
-          category_label: 'Severe Pothole Cavity on Asphalt Road',
-          location: { lat: pLat, lng: pLng, address: `Roadway approaching ${destination.name}` },
-          dimensions: { depth_cm: 15, width_cm: 58 },
-          delaySeconds: 60
-        }
-      ];
-    } else if (testScenario === 'case2_detour_faster') {
-      // 3 Severe Potholes on Road (+3 mins delay)
-      // Direct: 9 mins drive + 3 mins delay = 12 mins.
-      // Detour: 11 mins drive.
-      // Detour wins (11 mins < 12 mins)!
-      potholeCount = 3;
-      delayMin = 3.0;
-      const idx1 = Math.floor(primaryPath.length * 0.3);
-      const idx2 = Math.floor(primaryPath.length * 0.52);
-      const idx3 = Math.floor(primaryPath.length * 0.74);
-      activeDefects = [
-        {
-          id: 'road-pothole-1',
-          ticket_code: 'INFRA-P1-01',
-          severity: 'CRITICAL',
-          category_label: 'Deep Pothole Cavity',
-          location: { lat: primaryPath[idx1][0], lng: primaryPath[idx1][1], address: 'Road Sector A' },
-          dimensions: { depth_cm: 16, width_cm: 60 },
-          delaySeconds: 60
-        },
-        {
-          id: 'road-pothole-2',
-          ticket_code: 'INFRA-P1-02',
-          severity: 'CRITICAL',
-          category_label: 'Asphalt Crater Defect',
-          location: { lat: primaryPath[idx2][0], lng: primaryPath[idx2][1], address: 'Road Sector B' },
-          dimensions: { depth_cm: 14, width_cm: 54 },
-          delaySeconds: 60
-        },
-        {
-          id: 'road-pothole-3',
-          ticket_code: 'INFRA-P1-03',
-          severity: 'CRITICAL',
-          category_label: 'Depression Hazard',
-          location: { lat: primaryPath[idx3][0], lng: primaryPath[idx3][1], address: 'Road Sector C' },
-          dimensions: { depth_cm: 15, width_cm: 50 },
-          delaySeconds: 60
-        }
-      ];
-    } else {
-      // Case 3: No Alternative Road Exists (Only 1 physical road connects)
-      potholeCount = 1;
-      delayMin = 1.0;
-      const ptIdx = Math.floor(primaryPath.length * 0.45);
-      const [pLat, pLng] = primaryPath[ptIdx];
-      activeDefects = [
-        {
-          id: 'road-pothole-1',
-          ticket_code: 'INFRA-P1-01',
-          severity: 'CRITICAL',
-          category_label: 'Severe Pothole on Solitary Road',
-          location: { lat: pLat, lng: pLng, address: `Only Arterial Highway` },
-          dimensions: { depth_cm: 14, width_cm: 50 },
-          delaySeconds: 60
-        }
-      ];
-    }
+    const potholeCount = activeDefects.length;
+    const delayMin = 1.0;
 
     // Direct / Primary Route Calculations
     const directBaseDrivingMin = routingData.primaryDurationMin || 9;
@@ -443,41 +372,26 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     const directTotalETAMin = directBaseDrivingMin + delayMin;
 
     // Alternative / Safe Detour Route Calculations
-    const hasAlt = testScenario !== 'case3_no_alternative';
     const altBaseDrivingMin = hasAlt ? (routingData.altDurationMin || 11) : 999;
     const altDistanceKm = hasAlt ? (routingData.altDistanceKm || 5.3) : 0;
     const altTotalETAMin = altBaseDrivingMin; // 0 delay on safe detour
 
-    // -------------------------------------------------------------
-    // DECISION LOGIC:
-    // Case 1: If taking alternative route takes LESS time -> Prefer Alternative Route!
-    // Case 2: If taking alternative route takes MORE time -> Prefer Direct Route (fastest)!
-    // Case 3: If no other way exists -> Prefer Direct Route!
-    // -------------------------------------------------------------
     let recommendedRoute = 'direct';
-    let recommendationReason = '';
     let timeDifference = 0;
 
     if (!hasAlt) {
       recommendedRoute = 'direct';
-      recommendationReason = `No alternative road exists to reach this destination. Primary route is the only solution (Total: ${formatDuration(directTotalETAMin)}, includes 1 min crawl for 1 critical pothole).`;
     } else if (altTotalETAMin < directTotalETAMin) {
       recommendedRoute = 'safe';
       timeDifference = Math.round((directTotalETAMin - altTotalETAMin) * 10) / 10;
-      recommendationReason = `Alternative route is fastest by ${formatDuration(timeDifference)}! Arrives in ${formatDuration(altTotalETAMin)}, skipping ${potholeCount} critical potholes and avoiding ${delayMin} mins of crawl delays.`;
-    } else if (directTotalETAMin < altTotalETAMin) {
+    } else {
       recommendedRoute = 'direct';
       timeDifference = Math.round((altTotalETAMin - directTotalETAMin) * 10) / 10;
-      recommendationReason = `Primary route is fastest by ${formatDuration(timeDifference)} (takes ${formatDuration(directTotalETAMin)} vs ${formatDuration(altTotalETAMin)} detour). Even with the ${delayMin} min pothole delay, taking the detour would waste more time!`;
-    } else {
-      recommendedRoute = 'safe';
-      recommendationReason = `Both routes take ${formatDuration(directTotalETAMin)}. Alternative route recommended to eliminate vehicle shock and axle damage.`;
     }
 
     return {
       activeDefects,
       recommendedRoute,
-      recommendationReason,
       hasAlternativeRoad: hasAlt,
       timeDifference,
       direct: {
@@ -487,7 +401,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
         potholeDelayMin: delayMin,
         totalETAMin: directTotalETAMin,
         potholesCount: potholeCount,
-        roadQuality: potholeCount > 1 ? '38% (Degraded Asphalt)' : '64% (Distressed Road)',
+        roadQuality: '64% (Distressed Road)',
         riskLevel: 'AXLE STRIKE & WHEEL DAMAGE RISK'
       },
       safe: hasAlt
@@ -503,14 +417,14 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
           }
         : null
     };
-  }, [routingData, testScenario, destination.name]);
+  }, [routingData, destination.name]);
 
-  // Sync active route default whenever test scenario or calculation updates
+  // Sync active route default whenever calculation updates
   useEffect(() => {
     if (calculatedRoutes?.recommendedRoute) {
       setActiveRoute(calculatedRoutes.recommendedRoute);
     }
-  }, [calculatedRoutes?.recommendedRoute, testScenario]);
+  }, [calculatedRoutes?.recommendedRoute]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
@@ -646,54 +560,8 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
             </div>
           </div>
 
-          {/* Right Column: Routing Case Selector & Side-by-Side Cards */}
-          <div className="lg:col-span-7 space-y-2.5">
-            {/* Scenario Selector: Test User's Exact 2 Cases */}
-            <div className="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-mono">
-              <span className="text-slate-400 font-bold flex items-center space-x-1">
-                <Gauge className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Test Decision Cases:</span>
-              </span>
-              <div className="flex items-center space-x-1.5">
-                <button
-                  type="button"
-                  onClick={() => setTestScenario('case1_direct_faster')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
-                    testScenario === 'case1_direct_faster'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title="Direct 10m vs Detour 11m -> System prefers Direct even with pothole!"
-                >
-                  Case 1: Direct is Faster (10m vs 11m)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTestScenario('case2_detour_faster')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
-                    testScenario === 'case2_detour_faster'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title="Direct 12m vs Detour 11m -> System prefers Detour!"
-                >
-                  Case 2: Detour is Faster (11m vs 12m)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTestScenario('case3_no_alternative')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition ${
-                    testScenario === 'case3_no_alternative'
-                      ? 'bg-amber-600 text-white shadow'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title="Only 1 Physical Road Exists -> Must use Primary Route"
-                >
-                  Case 3: Only 1 Road Exists
-                </button>
-              </div>
-            </div>
-
+          {/* Right Column: Route Comparison Cards */}
+          <div className="lg:col-span-7">
             {/* Side-by-Side Route Comparison Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Route Card 1: DIRECT ROUTE (Through Real Road with Pothole) */}
@@ -824,16 +692,6 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* 3. Recommendation Banner Explaining Shortest-Time Logic */}
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono flex items-start space-x-2.5 shadow-inner">
-          <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold uppercase text-[10px] mt-0.5 flex-shrink-0">
-            Routing Decision:
-          </span>
-          <div className="text-slate-300 leading-relaxed">
-            {calculatedRoutes?.recommendationReason}
           </div>
         </div>
       </div>
