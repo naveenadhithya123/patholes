@@ -1,41 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, Zap, Info, Eye, Navigation, Sparkles, AlertTriangle, Send, Check, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, ShieldCheck, RefreshCw, Crosshair, AlertTriangle, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-const LOCATION_PRESETS = [
-  { name: 'Outer Ring Road (Silk Board Junction - Extreme Traffic Arterial)', lat: 12.9177, lng: 77.6238, ward_no: 174, ward_name: 'HSR Layout', zone: 'South', road_name: 'Outer Ring Road (Silk Board to Marathahalli)', traffic_tier: 'CRITICAL (145k PCU/day)' },
-  { name: 'Bellandur Eco-Space Frontage (Heavy Tech Corridor)', lat: 12.9284, lng: 77.6835, ward_no: 150, ward_name: 'Bellandur', zone: 'Mahadevapura', road_name: 'Outer Ring Road', traffic_tier: 'CRITICAL (145k PCU/day)' },
-  { name: 'KR Puram Underpass (Retaining Wall Structural Zone)', lat: 12.9995, lng: 77.6948, ward_no: 52, ward_name: 'KR Puram', zone: 'East', road_name: 'KR Puram Hanging Bridge Approach Road', traffic_tier: 'CRITICAL (150k PCU/day)' },
-  { name: 'Indiranagar 100ft Road (Commercial Nightlife Corridor)', lat: 12.9721, lng: 77.6415, ward_no: 80, ward_name: 'Hoysala Nagar', zone: 'East', road_name: 'Indiranagar 100 Feet Road', traffic_tier: 'HIGH (76k PCU/day)' },
-  { name: 'Whitefield Main Road (Near ITPL - Overdue Road Lifespan)', lat: 12.9832, lng: 77.7441, ward_no: 84, ward_name: 'Hagadur', zone: 'Mahadevapura', road_name: 'Whitefield Main Road', traffic_tier: 'CRITICAL (105k PCU/day)' },
-  { name: 'Marathahalli Multiplex Junction (NEW Unreported Location)', lat: 12.9542, lng: 77.7011, ward_no: 85, ward_name: 'Doddanekkundi', zone: 'Mahadevapura', road_name: 'HAL Airport - Varthur Road', traffic_tier: 'HIGH (88k PCU/day)' },
-  { name: 'Koramangala 4th Block Interior Road (Moderate Residential)', lat: 12.9312, lng: 77.6302, ward_no: 151, ward_name: 'Koramangala', zone: 'South', road_name: '80ft Peripheral Corridor', traffic_tier: 'MODERATE (42k PCU/day)' }
-];
 
 export default function CitizenCameraPortal({ onDefectReported, onBack }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
-  const [simulatedFeed, setSimulatedFeed] = useState(false); // real physical camera by default
-  const [selectedPresetIndex, setSelectedPresetIndex] = useState(-1);
+  const [simulatedFeed, setSimulatedFeed] = useState(false);
 
-  // Real Device GPS State (Requested On-Demand ONLY when submitting!)
+  // Live Device GPS State (Acquired on submit or on demand)
   const [gpsLocation, setGpsLocation] = useState({
     acquired: false,
     lat: null,
     lng: null,
-    address: 'Live coordinates will be captured on submit',
-    ward_no: null,
-    ward_name: '',
+    address: 'Live GPS coordinates captured on submit',
     accuracy: null,
     isRealDeviceGPS: false,
-    status: 'idle', // 'idle' | 'requesting' | 'acquired' | 'denied' | 'preset'
+    status: 'idle',
     errorMessage: null,
     lastUpdated: null
   });
   const [isLocating, setIsLocating] = useState(false);
 
-  // REAL-TIME AUTOMATIC COMPUTER VISION DETECTION STATE (NO MANUAL BUTTONS!)
-  // Automatically detects real defects, measures true depth, and rejects clean surfaces & screen spoofs!
+  // Real-Time Computer Vision Detection State
   const [autoVisionResult, setAutoVisionResult] = useState({
     detected: false,
     is_spoof: false,
@@ -48,13 +34,13 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
     length_cm: 0,
     severity: 'NORMAL',
     box: { x: 0.25, y: 0.25, w: 0.5, h: 0.5 },
-    color: '#10b981' // emerald when scanning
+    color: '#10b981'
   });
 
   const smoothBoxRef = useRef({ x: 0.25, y: 0.25, w: 0.5, h: 0.5 });
   const visionStateRef = useRef(autoVisionResult);
 
-  // Submission State (strictly null until citizen clicks send!)
+  // Submission State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [reportResult, setReportResult] = useState(null);
 
@@ -63,14 +49,14 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
   const overlayCanvasRef = useRef(null);
   const procCanvasRef = useRef(null);
 
-  // Request Physical Camera immediately on mount with robust mobile fallback
+  // Start Camera Stream
   useEffect(() => {
     let stream = null;
     let isCancelled = false;
 
     const startCamera = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError('Browser mediaDevices not supported. Using live road stream.');
+        setCameraError('Browser media devices not supported. Using demo road stream.');
         setSimulatedFeed(true);
         return;
       }
@@ -86,7 +72,6 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
             }
           });
         } catch (constraintErr) {
-          // Fallback if environment / resolution constraints failed on mobile device
           s = await navigator.mediaDevices.getUserMedia({ video: true });
         }
 
@@ -111,7 +96,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
         setCameraError(null);
       } catch (err) {
         console.warn('Physical camera error:', err.message);
-        setCameraError('Physical camera unavailable. Switched to live road inspection stream.');
+        setCameraError('Camera access not granted or unavailable. Switched to demo road stream.');
         setSimulatedFeed(true);
       }
     };
@@ -128,12 +113,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
     };
   }, [simulatedFeed]);
 
-  // ON-DEMAND LOCATION POLICY:
-  // We do NOT prompt for GPS while the user is simply scanning or moving the camera.
-  // Location permission is queried strictly when the user clicks "Post Defect with Live GPS".
-
-  // AUTOMATED REAL-TIME COMPUTER VISION ENGINE (OPENCV EDGE & DYNAMIC CAVITY TRACKING)
-  // Dynamically tracks the pothole's exact position, size, depth, and severity in real-time under the camera!
+  // Real-Time Computer Vision Analysis & Viewfinder Overlay
   useEffect(() => {
     let animationId;
     let frameCounter = 0;
@@ -158,13 +138,13 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
 
         ctx.clearRect(0, 0, width, height);
 
-        // Analyze video pixels every 3 frames (~50ms) for high responsiveness
+        // Process frames for cavity detection
         if (frameCounter % 3 === 0 && (video || simulatedFeed)) {
           let hasDefect = false;
           let isSpoof = false;
           let spoofReason = '';
           let defectType = 'none';
-          let defectLabel = 'Road Surface Normal • No Damage';
+          let defectLabel = 'Road Surface Normal';
           let depth = 0;
           let defectWidth = 0;
           let defectLength = 0;
@@ -177,10 +157,9 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
               procCtx.drawImage(video, 0, 0, procCanvas.width, procCanvas.height);
               const imgData = procCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
               const data = imgData.data;
-              const pw = procCanvas.width;  // 160
-              const ph = procCanvas.height; // 90
+              const pw = procCanvas.width;
+              const ph = procCanvas.height;
 
-              // Grid Analysis: 16 columns x 9 rows (each cell is 10x10 px)
               const cols = 16;
               const rows = 9;
               const cellLum = Array.from({ length: cols }, () => new Float32Array(rows));
@@ -203,18 +182,8 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
                       sum += lum;
 
-                      // Screen glare detector
-                      if (r > 245 && g > 245 && b > 245) glarePixels++;
-
-                      // Bezel border contrast
-                      if (dx > 2 && dy > 2) {
-                        const prevIdx = ((startY + dy) * pw + (startX + dx - 2)) * 4;
-                        const pLum = 0.299 * data[prevIdx] + 0.587 * data[prevIdx + 1] + 0.114 * data[prevIdx + 2];
-                        const diff = Math.abs(lum - pLum);
-                        if ((startX < 15 || startX > pw - 15 || startY < 12 || startY > ph - 12) && diff > 55) {
-                          borderEdgeMatches++;
-                        }
-                      }
+                      if (lum > 248 && Math.abs(r - g) < 8 && Math.abs(g - b) < 8) glarePixels++;
+                      if ((ry === 0 || ry === rows - 1 || cx === 0 || cx === cols - 1) && Math.abs(r - g) > 40) borderEdgeMatches++;
                     }
                   }
                   const avg = sum / 25;
@@ -225,147 +194,130 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
 
               const meanLum = totalLum / (cols * rows);
 
-              // Standard deviation across grid cells
-              let varSum = 0;
-              for (let ry = 0; ry < rows; ry++) {
-                for (let cx = 0; cx < cols; cx++) {
-                  varSum += (cellLum[cx][ry] - meanLum) * (cellLum[cx][ry] - meanLum);
-                }
-              }
-              const stdDev = Math.sqrt(varSum / (cols * rows));
-
-              // 1. Anti-Spoofing Check
-              if (borderEdgeMatches > 40 && glarePixels > 12) {
+              // Anti-spoofing check
+              if (glarePixels > 85 && borderEdgeMatches > 45) {
                 isSpoof = true;
-                spoofReason = 'Screen display / monitor bezel detected';
-              } else if (glarePixels > 70 && stdDev < 18) {
-                isSpoof = true;
-                spoofReason = 'Glossy digital display reflection detected';
+                spoofReason = 'Screen glare detected. Point camera at physical road surface.';
               }
 
-              // 2. OpenCV Cavity Segmentation (Only authentic physical surfaces)
-              if (!isSpoof && stdDev >= 7.5) {
-                // Adaptive crater threshold relative to surrounding surface brightness
-                const cavityThreshold = meanLum - Math.max(9, 0.65 * stdDev);
-                let minCol = cols, maxCol = 0, minRow = rows, maxRow = 0;
-                let cavityCount = 0;
-                let minCellLum = 255;
-
-                for (let ry = 0; ry < rows; ry++) {
-                  for (let cx = 0; cx < cols; cx++) {
-                    const lum = cellLum[cx][ry];
-                    if (lum < cavityThreshold) {
-                      cavityCount++;
-                      if (cx < minCol) minCol = cx;
-                      if (cx > maxCol) maxCol = cx;
-                      if (ry < minRow) minRow = ry;
-                      if (ry > maxRow) maxRow = ry;
-                      if (lum < minCellLum) minCellLum = lum;
+              if (!isSpoof) {
+                let darkCells = [];
+                let minVal = 999;
+                for (let ry = 1; ry < rows - 1; ry++) {
+                  for (let cx = 1; cx < cols - 1; cx++) {
+                    const v = cellLum[cx][ry];
+                    if (v < meanLum * 0.72) {
+                      darkCells.push({ cx, ry, val: v });
+                      if (v < minVal) minVal = v;
                     }
                   }
                 }
 
-                // A real pothole covers between 2% and 55% of the frame
-                if (cavityCount >= 2 && cavityCount <= 85) {
+                if (darkCells.length >= 3) {
                   hasDefect = true;
                   defectType = 'pothole';
-                  defectLabel = 'Road Pothole Cavitation';
+                  defectLabel = 'Pothole Cavity';
 
-                  // Dynamic Target Bounding Box strictly surrounding the detected defect
-                  const spanW = maxCol - minCol + 1;
-                  const spanH = maxRow - minRow + 1;
-                  let targetW = Math.max(0.20, Math.min(0.90, (spanW * 10) / pw + 0.05));
-                  let targetH = Math.max(0.18, Math.min(0.88, (spanH * 10) / ph + 0.05));
-                  let targetX = Math.max(0.04, Math.min(0.94 - targetW, (minCol * 10) / pw - 0.025));
-                  let targetY = Math.max(0.04, Math.min(0.94 - targetH, (minRow * 10) / ph - 0.025));
+                  let minX = 16, maxX = 0, minY = 9, maxY = 0;
+                  darkCells.forEach(c => {
+                    if (c.cx < minX) minX = c.cx;
+                    if (c.cx > maxX) maxX = c.cx;
+                    if (c.ry < minY) minY = c.ry;
+                    if (c.ry > maxY) maxY = c.ry;
+                  });
 
-                  // Smooth tracking: exponential moving average to smoothly follow camera movements
-                  smoothBoxRef.current.x += (targetX - smoothBoxRef.current.x) * 0.40;
-                  smoothBoxRef.current.y += (targetY - smoothBoxRef.current.y) * 0.40;
-                  smoothBoxRef.current.w += (targetW - smoothBoxRef.current.w) * 0.40;
-                  smoothBoxRef.current.h += (targetH - smoothBoxRef.current.h) * 0.40;
+                  const cavityDropRatio = Math.max(0.2, (meanLum - minVal) / Math.max(1, meanLum));
+                  depth = Math.round(7 + cavityDropRatio * 14);
+                  defectWidth = Math.round(25 + (maxX - minX + 1) * 6.5);
+                  defectLength = Math.round(28 + (maxY - minY + 1) * 7.0);
+                  confidence = Math.min(98, Math.round(82 + darkCells.length * 2.2));
 
-                  // True Photometric Depth (cm) and Metric Dimensions (cm)
-                  const depthFactor = Math.min(1.0, (meanLum - minCellLum) / Math.max(1, meanLum));
-                  depth = Math.min(18, Math.max(5, Math.round(5 + depthFactor * 14)));
-                  defectWidth = Math.round(smoothBoxRef.current.w * 92);
-                  defectLength = Math.round(smoothBoxRef.current.h * 96);
-                  severity = depth >= 12 ? 'CRITICAL' : (depth >= 7 ? 'HIGH' : 'MEDIUM');
-                  boxColor = severity === 'CRITICAL' ? '#f43f5e' : (severity === 'HIGH' ? '#f59e0b' : '#06b6d4');
-                  confidence = Math.min(98.6, Math.round((90 + depthFactor * 8.5) * 10) / 10);
+                  if (depth >= 13 || defectWidth >= 50) {
+                    severity = 'CRITICAL';
+                    boxColor = '#ef4444';
+                  } else if (depth >= 8 || defectWidth >= 35) {
+                    severity = 'HIGH';
+                    boxColor = '#f59e0b';
+                  } else {
+                    severity = 'MODERATE';
+                    boxColor = '#06b6d4';
+                  }
+
+                  const targetBox = {
+                    x: Math.max(0.08, minX / cols - 0.04),
+                    y: Math.max(0.08, minY / rows - 0.04),
+                    w: Math.min(0.85, (maxX - minX + 1) / cols + 0.08),
+                    h: Math.min(0.85, (maxY - minY + 1) / rows + 0.08)
+                  };
+
+                  smoothBoxRef.current = {
+                    x: smoothBoxRef.current.x * 0.7 + targetBox.x * 0.3,
+                    y: smoothBoxRef.current.y * 0.7 + targetBox.y * 0.3,
+                    w: smoothBoxRef.current.w * 0.7 + targetBox.w * 0.3,
+                    h: smoothBoxRef.current.h * 0.7 + targetBox.h * 0.3
+                  };
                 }
               }
-            } catch (err) {
-              console.warn('Live CV processing error:', err);
-            }
-          }
-
-          // If in Demo Stream mode, show active demo defect with realistic metrics
-          if (simulatedFeed) {
+            } catch (cvErr) {}
+          } else if (simulatedFeed) {
             hasDefect = true;
             defectType = 'pothole';
-            defectLabel = 'Road Pothole Cavitation';
-            depth = 13;
+            defectLabel = 'Severe Road Pothole';
+            depth = 14;
             defectWidth = 52;
             defectLength = 58;
+            confidence = 96;
             severity = 'CRITICAL';
-            boxColor = '#f43f5e';
-            confidence = 96.8;
-            smoothBoxRef.current = { x: 0.22, y: 0.28, w: 0.55, h: 0.42 };
+            boxColor = '#ef4444';
+
+            smoothBoxRef.current = {
+              x: 0.28,
+              y: 0.24,
+              w: 0.44,
+              h: 0.52
+            };
           }
 
-          const currentVision = {
+          const newRes = {
             detected: hasDefect,
             is_spoof: isSpoof,
             spoof_reason: spoofReason,
             type: defectType,
-            label: isSpoof ? '⚠️ REJECTED: SCREEN SPOOF DETECTED' : (hasDefect ? defectLabel : 'Road Surface Normal • No Damage'),
+            label: defectLabel,
             confidence,
             depth_cm: depth,
             width_cm: defectWidth,
             length_cm: defectLength,
             severity,
-            box: { ...smoothBoxRef.current },
-            color: isSpoof ? '#f43f5e' : (hasDefect ? boxColor : '#10b981')
+            box: smoothBoxRef.current,
+            color: boxColor
           };
 
-          visionStateRef.current = currentVision;
-
-          // Sync with React state smoothly every 10 frames (~160ms)
-          if (frameCounter % 10 === 0) {
-            setAutoVisionResult(currentVision);
-          }
+          visionStateRef.current = newRes;
+          setAutoVisionResult(newRes);
         }
 
-        // Draw HUD at 60fps directly using visionStateRef and smoothBoxRef
+        // Draw Tracking Overlays on Canvas
         const v = visionStateRef.current;
         const sBox = smoothBoxRef.current;
 
         if (v.is_spoof) {
-          // ANTI-SPOOF ALERT HUD
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 3;
-          ctx.setLineDash([8, 8]);
-          ctx.strokeRect(20, 20, width - 40, height - 40);
-          ctx.setLineDash([]);
-
           ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-          ctx.fillRect(width / 2 - 220, height / 2 - 35, 440, 70);
+          ctx.fillRect(width / 2 - 200, height / 2 - 30, 400, 60);
           ctx.strokeStyle = '#ef4444';
           ctx.lineWidth = 1.5;
-          ctx.strokeRect(width / 2 - 220, height / 2 - 35, 440, 70);
+          ctx.strokeRect(width / 2 - 200, height / 2 - 30, 400, 60);
 
           ctx.fillStyle = '#ef4444';
-          ctx.font = 'bold 13px sans-serif';
+          ctx.font = 'bold 12px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('⚠️ ANTI-SPOOF ALERT: DIGITAL SCREEN DETECTED', width / 2, height / 2 - 10);
+          ctx.fillText('⚠️ DIGITAL SCREEN DETECTED', width / 2, height / 2 - 8);
 
           ctx.fillStyle = '#f8fafc';
-          ctx.font = '11px monospace';
-          ctx.fillText(v.spoof_reason || 'Photo of a screen is not permitted. Scan physical road.', width / 2, height / 2 + 15);
+          ctx.font = '10px monospace';
+          ctx.fillText('Please point camera at physical road surface.', width / 2, height / 2 + 14);
           ctx.textAlign = 'start';
         } else if (v.detected) {
-          // REAL DEFECT DETECTED: Draw OpenCV Bounding Box & HUD Elements
           const bx = width * sBox.x;
           const by = height * sBox.y;
           const bw = width * sBox.w;
@@ -373,82 +325,78 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
 
           // Bounding Box
           ctx.strokeStyle = v.color;
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2.5;
           ctx.strokeRect(bx, by, bw, bh);
 
-          // Corner L-Accents
-          const corner = 20;
+          // Corner Accents
+          const corner = 18;
           ctx.fillStyle = v.color;
-          ctx.fillRect(bx - 3, by - 3, corner, 4);
-          ctx.fillRect(bx - 3, by - 3, 4, corner);
-          ctx.fillRect(bx + bw - corner + 3, by - 3, corner, 4);
-          ctx.fillRect(bx + bw - 1, by - 3, 4, corner);
-          ctx.fillRect(bx - 3, by + bh - 1, corner, 4);
-          ctx.fillRect(bx - 3, by + bh - corner + 3, 4, corner);
-          ctx.fillRect(bx + bw - corner + 3, by + bh - 1, corner, 4);
-          ctx.fillRect(bx + bw - 1, by + bh - corner + 3, 4, corner);
+          ctx.fillRect(bx - 2, by - 2, corner, 3.5);
+          ctx.fillRect(bx - 2, by - 2, 3.5, corner);
+          ctx.fillRect(bx + bw - corner + 2, by - 2, corner, 3.5);
+          ctx.fillRect(bx + bw - 1.5, by - 2, 3.5, corner);
+          ctx.fillRect(bx - 2, by + bh - 1.5, corner, 3.5);
+          ctx.fillRect(bx - 2, by + bh - corner + 2, 3.5, corner);
+          ctx.fillRect(bx + bw - corner + 2, by + bh - 1.5, corner, 3.5);
+          ctx.fillRect(bx + bw - 1.5, by + bh - corner + 2, 3.5, corner);
 
-          // Centroid Crosshair
+          // Center Crosshair
           const cx = bx + bw / 2;
           const cy = by + bh / 2;
           ctx.strokeStyle = v.color;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
-          ctx.moveTo(cx, cy - 20); ctx.lineTo(cx + 20, cy);
+          ctx.arc(cx, cy, 12, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Upper Header Pill: OPENCV: POTHOLE • CRITICAL (94%)
-          const headerW = Math.min(bw, 380);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-          ctx.fillRect(bx, by - 26, headerW, 22);
+          // Header Pill: POTHOLE DETECTED • CRITICAL
+          const headerW = Math.min(bw, 320);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(bx, by - 24, headerW, 20);
           ctx.strokeStyle = v.color;
-          ctx.lineWidth = 1.2;
-          ctx.strokeRect(bx, by - 26, headerW, 22);
-          ctx.fillStyle = v.color;
-          ctx.font = 'bold 11px monospace';
-          ctx.fillText(`OPENCV: ${v.label.toUpperCase()} • ${v.severity} (${v.confidence}%)`, bx + 8, by - 11);
-
-          // Lower Footer Pill: DEPTH: 13 cm | WIDTH: 52 cm | LENGTH: 58 cm | SEVERITY: CRITICAL
-          const footerW = Math.min(bw, 380);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-          ctx.fillRect(bx, by + bh + 4, footerW, 22);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
           ctx.lineWidth = 1;
-          ctx.strokeRect(bx, by + bh + 4, footerW, 22);
+          ctx.strokeRect(bx, by - 24, headerW, 20);
+          ctx.fillStyle = v.color;
+          ctx.font = 'bold 11px sans-serif';
+          ctx.fillText(`${v.label.toUpperCase()} • ${v.severity}`, bx + 8, by - 9);
+
+          // Lower Footer Pill: Depth & Width
+          const footerW = Math.min(bw, 260);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(bx, by + bh + 4, footerW, 20);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, by + bh + 4, footerW, 20);
           ctx.fillStyle = '#f8fafc';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText(`DEPTH: ${v.depth_cm} cm | W: ${v.width_cm} cm | L: ${v.length_cm} cm | ${v.severity}`, bx + 8, by + bh + 19);
+          ctx.fillText(`DEPTH: ${v.depth_cm} cm | WIDTH: ${v.width_cm} cm`, bx + 8, by + bh + 18);
         } else {
-          // NO DEFECT IN VIEW: Draw subtle scanning crosshair in the center
+          // Center scanning reticle
           const cx = width / 2;
           const cy = height / 2;
 
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 24, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.moveTo(cx - 40, cy); ctx.lineTo(cx - 10, cy);
-          ctx.moveTo(cx + 10, cy); ctx.lineTo(cx + 40, cy);
-          ctx.moveTo(cx, cy - 40); ctx.lineTo(cx, cy - 10);
-          ctx.moveTo(cx, cy + 10); ctx.lineTo(cx, cy + 40);
+          ctx.moveTo(cx - 32, cy); ctx.lineTo(cx - 8, cy);
+          ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 32, cy);
+          ctx.moveTo(cx, cy - 32); ctx.lineTo(cx, cy - 8);
+          ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy + 32);
           ctx.stroke();
 
           // Status Badge at top
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-          ctx.fillRect(cx - 160, 20, 320, 24);
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
-          ctx.strokeRect(cx - 160, 20, 320, 24);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(cx - 140, 16, 280, 22);
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+          ctx.strokeRect(cx - 140, 16, 280, 22);
           ctx.fillStyle = '#34d399';
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
-          ctx.fillText('SCANNING SURFACE • ROAD CLEAR (NO DAMAGE)', cx, 36);
+          ctx.fillText('SCANNING SURFACE • ROAD CLEAR', cx, 31);
           ctx.textAlign = 'start';
         }
       }
@@ -463,25 +411,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
     };
   }, [simulatedFeed]);
 
-  const handlePresetChange = (idx) => {
-    setSelectedPresetIndex(idx);
-    const preset = LOCATION_PRESETS[idx];
-    setGpsLocation({
-      acquired: true,
-      lat: preset.lat,
-      lng: preset.lng,
-      address: preset.name,
-      ward_no: preset.ward_no,
-      ward_name: preset.ward_name,
-      accuracy: 2.5,
-      isRealDeviceGPS: false,
-      status: 'preset',
-      errorMessage: null,
-      lastUpdated: new Date().toLocaleTimeString()
-    });
-  };
-
-  // Dedicated helper if citizen manually clicks Lock Device GPS beforehand
+  // Query Device Live GPS On-Demand
   const acquireRealGPS = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
@@ -499,9 +429,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           lat: liveLat,
           lng: liveLng,
           accuracy: acc,
-          address: `Live Device Coordinates (±${acc}m)`,
-          ward_no: 150,
-          ward_name: 'Live Mobile GPS',
+          address: `Live Location (${liveLat.toFixed(4)}, ${liveLng.toFixed(4)})`,
           isRealDeviceGPS: true,
           status: 'acquired',
           errorMessage: null,
@@ -511,81 +439,46 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
       },
       (err) => {
         setIsLocating(false);
-        let msg = 'Live Device Location Required: ' + err.message;
-        if (err.code === 1) {
-          msg = 'Location permission was denied. Please allow location access in your browser settings.';
-        } else if (err.code === 2) {
-          msg = 'Device GPS unavailable. Please enable device location settings.';
-        }
-        alert(msg);
-        setGpsLocation(prev => ({
-          ...prev,
-          status: 'denied',
-          errorMessage: msg
-        }));
+        alert('Could not acquire location: ' + err.message);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
-  // POST DEFECT WITH LIVE LOCATION OF THE DEVICE
-  // ON-DEMAND GPS POLICY: Requests live location strictly when the user clicks this submit button!
+  // Submit Defect with Verified Location
   const handlePostDefect = async () => {
     if (autoVisionResult.is_spoof) {
-      alert('Anti-Spoof Alert: The camera detected a digital screen or photo-of-a-photo. Please point your camera directly at the physical road surface.');
+      alert('Digital screen detected. Please point camera at actual road damage.');
       return;
     }
 
-    setIsLocating(true);
     setIsAnalyzing(true);
-    setReportResult(null);
 
-    // Capture snapshot from physical camera
-    let snapshotDataUrl = null;
-    if (!simulatedFeed && videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-    } else {
-      snapshotDataUrl = 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80';
-    }
-
-    // Helper to send report to municipal API once live coordinates are acquired
     const submitWithLocation = async (lat, lng, accuracy, addressName) => {
       try {
-        const currentVision = (visionStateRef.current && visionStateRef.current.detected) ? visionStateRef.current : autoVisionResult;
-        const payloadType = currentVision.detected ? currentVision.type : 'pothole';
-        const payloadSeverity = currentVision.detected ? currentVision.severity : (currentVision.depth_cm >= 12 ? 'CRITICAL' : 'HIGH');
+        const payloadType = autoVisionResult.detected ? autoVisionResult.type : 'pothole';
+        const payloadSeverity = autoVisionResult.detected ? autoVisionResult.severity : 'HIGH';
         const payloadDimensions = {
-          depth_cm: currentVision.depth_cm || 12,
-          width_cm: currentVision.width_cm || 50,
-          length_cm: currentVision.length_cm || 54
+          depth_cm: autoVisionResult.detected && autoVisionResult.depth_cm > 0 ? autoVisionResult.depth_cm : 12,
+          width_cm: autoVisionResult.detected && autoVisionResult.width_cm > 0 ? autoVisionResult.width_cm : 45,
+          length_cm: autoVisionResult.detected && autoVisionResult.length_cm > 0 ? autoVisionResult.length_cm : 50
         };
 
         const response = await fetch('/api/defects/report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            image_data: snapshotDataUrl,
+            title: `${payloadSeverity} ${payloadType === 'pothole' ? 'Road Pothole' : 'Road Defect'} Reported`,
+            description: `Road surface defect identified via mobile scanner. Depth: ${payloadDimensions.depth_cm}cm, Width: ${payloadDimensions.width_cm}cm.`,
             location: {
               lat: lat,
               lng: lng,
-              address: addressName || `Live Device Coordinates (±${accuracy}m)`,
-              ward_no: 150,
-              ward_name: 'Live Mobile GPS'
+              address: addressName || `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
             },
             type: payloadType,
             severity: payloadSeverity,
             dimensions: payloadDimensions,
-            reported_by: 'citizen_manual_camera'
+            reported_by: 'citizen_camera'
           })
         });
 
@@ -604,29 +497,23 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           }
           if (onDefectReported) onDefectReported(data);
         } else {
-          alert(data.message || 'Inspection error.');
+          alert(data.message || 'Error submitting defect report.');
         }
       } catch (err) {
         setIsLocating(false);
         setIsAnalyzing(false);
         console.error('Submission failed:', err);
-        alert('Network error connecting to municipal API.');
+        alert('Network error connecting to civic portal.');
       }
     };
 
-    // If citizen selected a preset simulation corridor, submit immediately:
-    if (gpsLocation.status === 'preset' && gpsLocation.lat && gpsLocation.lng) {
-      await submitWithLocation(gpsLocation.lat, gpsLocation.lng, gpsLocation.accuracy, gpsLocation.address);
-      return;
-    }
-
     // If real device GPS was already locked, submit directly:
-    if (gpsLocation.acquired && gpsLocation.lat && gpsLocation.lng && gpsLocation.isRealDeviceGPS) {
+    if (gpsLocation.acquired && gpsLocation.lat && gpsLocation.lng) {
       await submitWithLocation(gpsLocation.lat, gpsLocation.lng, gpsLocation.accuracy, gpsLocation.address);
       return;
     }
 
-    // Otherwise, request fresh Live Device GPS from hardware right now on submit!
+    // Otherwise, request Live Device GPS right now on submit:
     if (!navigator.geolocation) {
       setIsLocating(false);
       setIsAnalyzing(false);
@@ -634,6 +521,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
       return;
     }
 
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const liveLat = pos.coords.latitude;
@@ -645,25 +533,23 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           lat: liveLat,
           lng: liveLng,
           accuracy: acc,
-          address: `Live Device Coordinates (±${acc}m)`,
-          ward_no: 150,
-          ward_name: 'Live Mobile GPS',
+          address: `GPS: ${liveLat.toFixed(5)}, ${liveLng.toFixed(5)}`,
           isRealDeviceGPS: true,
           status: 'acquired',
           errorMessage: null,
           lastUpdated: new Date().toLocaleTimeString()
         });
 
-        await submitWithLocation(liveLat, liveLng, acc, `Live Device Coordinates (±${acc}m)`);
+        await submitWithLocation(liveLat, liveLng, acc, `GPS: ${liveLat.toFixed(5)}, ${liveLng.toFixed(5)}`);
       },
       (err) => {
         setIsLocating(false);
         setIsAnalyzing(false);
         let msg = 'Live Device Location Required: ' + err.message;
         if (err.code === 1) {
-          msg = 'Location permission was denied. Please tap "Allow" when prompted by your browser to send your real-time GPS coordinates with this report.';
+          msg = 'Location permission is required. Please tap "Allow" when prompted by your browser to submit the real GPS location.';
         } else if (err.code === 2) {
-          msg = 'Device GPS unavailable. Please turn on Location in your phone settings.';
+          msg = 'Device GPS unavailable. Please enable Location in your device settings.';
         }
         alert(msg);
         setGpsLocation(prev => ({
@@ -675,7 +561,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
       {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 0 // fresh satellite coordinates!
+        maximumAge: 0
       }
     );
   };
@@ -684,7 +570,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
       {/* Top Header with Back to Dashboard Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-800">
         <div className="flex items-center space-x-3">
           {onBack && (
             <button
@@ -700,28 +586,28 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           <div>
             <h1 className="text-xl font-bold text-white flex items-center space-x-2">
               <Camera className="w-5 h-5 text-cyan-400" />
-              <span>Capture Potholes with Live GPS</span>
+              <span>Capture Pothole with Live GPS</span>
             </h1>
             <p className="text-xs text-slate-400">
-              OpenCV AI automatically measures cavity depth & dimensions, and tags verified device GPS on submit.
+              Point your camera at the road defect and submit with verified live GPS coordinates.
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-800 text-xs font-mono">
           <div className={`w-2.5 h-2.5 rounded-full ${gpsLocation.acquired ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`}></div>
-          <span className="text-slate-400">GPS Mode:</span>
+          <span className="text-slate-400">GPS Status:</span>
           <span className={gpsLocation.acquired ? 'text-emerald-400 font-bold' : 'text-cyan-300 font-bold'}>
             {gpsLocation.acquired
               ? `${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`
-              : 'Auto-Locked on Submit'}
+              : 'Captures on Submit'}
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Live In-App Camera Viewfinder with Real-time OpenCV Canvas Overlay */}
+        {/* Left Column: Live In-App Camera Viewfinder with Real-time Framing */}
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl relative">
             
@@ -730,19 +616,17 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
               <div className="flex items-center space-x-2">
                 <span className={`w-2 h-2 rounded-full ${cameraActive ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'}`}></span>
                 <span className="font-mono text-slate-300 uppercase tracking-wider font-semibold">
-                  {simulatedFeed ? 'DEMO ROAD STREAM • OPENCV ACTIVE' : 'LIVE DEVICE CAMERA • OPENCV ACTIVE'}
+                  {simulatedFeed ? 'DEMO ROAD STREAM' : 'LIVE DEVICE CAMERA'}
                 </span>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setSimulatedFeed(!simulatedFeed)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition text-[11px] border border-slate-700"
-                >
-                  {simulatedFeed ? 'Switch to Physical Camera' : 'Switch to Demo Road Feed'}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSimulatedFeed(!simulatedFeed)}
+                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition text-[11px] border border-slate-700"
+              >
+                {simulatedFeed ? 'Switch to Device Camera' : 'Switch to Demo Road Feed'}
+              </button>
             </div>
 
             {/* Video / Live Camera Screen + Overlay Canvas */}
@@ -769,7 +653,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
 
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* REAL-TIME COMPUTER VISION OVERLAY CANVAS (AUTOMATIC OPENCV BOUNDING BOX & MEASUREMENTS) */}
+              {/* Dynamic Tracking Overlay Canvas */}
               <canvas
                 ref={overlayCanvasRef}
                 width={640}
@@ -777,112 +661,85 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                 className="absolute inset-0 w-full h-full pointer-events-none"
               />
 
-              {/* Automatic Detection Pill */}
+              {/* Top-Right Status Pill */}
               {autoVisionResult.is_spoof ? (
-                <div className="absolute top-3 right-3 bg-red-950/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-red-500/60 text-[10px] font-mono text-red-300 flex items-center space-x-1.5 shadow-lg shadow-red-950/50">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-bounce" />
-                  <span className="font-bold">ANTI-SPOOF: DIGITAL SCREEN DETECTED</span>
+                <div className="absolute top-3 right-3 bg-red-950/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-red-500/60 text-[10px] font-mono text-red-300 flex items-center space-x-1.5 shadow-lg">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                  <span className="font-bold">SCREEN DETECTED</span>
                 </div>
               ) : autoVisionResult.detected ? (
                 <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-cyan-500/40 text-[10px] font-mono text-cyan-300 flex items-center space-x-1.5">
-                  <Crosshair className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-                  <span>OPENCV: {autoVisionResult.label.toUpperCase()}</span>
+                  <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{autoVisionResult.label.toUpperCase()}</span>
                 </div>
               ) : (
                 <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-[10px] font-mono text-slate-400 flex items-center space-x-1.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <span>SCANNING SURFACE • ROAD CLEAR</span>
+                  <span>SCANNING SURFACE</span>
                 </div>
               )}
 
-              {/* Watermark with GPS and Timestamp */}
+              {/* GPS Overlay Watermark */}
               <div className="absolute bottom-3 left-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-[10px] font-mono text-slate-300 space-y-0.5">
                 <div className="flex items-center space-x-1.5 font-semibold">
                   <MapPin className="w-3 h-3 text-cyan-400" />
                   {gpsLocation.acquired ? (
                     <span className="text-cyan-400">
-                      GPS: {gpsLocation.lat.toFixed(6)}, {gpsLocation.lng.toFixed(6)} (±{gpsLocation.accuracy}m)
+                      GPS: {gpsLocation.lat.toFixed(5)}, {gpsLocation.lng.toFixed(5)}
                     </span>
                   ) : (
                     <span className="text-emerald-400">
-                      GPS: Auto-Captured on Submit
+                      GPS: Captures on Submit
                     </span>
                   )}
-                </div>
-                <div className="text-slate-400">
-                  {gpsLocation.acquired
-                    ? `${gpsLocation.ward_name || 'Live Mobile GPS'} • ${gpsLocation.lastUpdated || 'Active'}`
-                    : '🛰️ Real-Time Device GPS captured when posting'}
                 </div>
               </div>
 
             </div>
 
-            {/* SINGLE ACTION BUTTON: POST DEFECT WITH LIVE LOCATION */}
+            {/* Bottom Action Strip: Measurements + Submit Button */}
             <div className="p-4 bg-slate-950/90 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-xs text-slate-400 flex items-center space-x-2 font-mono">
-                {autoVisionResult.is_spoof ? (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                    <span className="text-red-400 font-semibold">{autoVisionResult.spoof_reason || 'Screen detected. Scan physical road.'}</span>
-                  </>
-                ) : autoVisionResult.detected ? (
+                {autoVisionResult.detected ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                     <span>
-                      Live OpenCV: Depth <strong className="text-white">{autoVisionResult.depth_cm}cm</strong> • W <strong className="text-white">{autoVisionResult.width_cm}cm</strong> • L <strong className="text-white">{autoVisionResult.length_cm}cm</strong>
+                      Depth: <strong className="text-white">{autoVisionResult.depth_cm} cm</strong> • Width: <strong className="text-white">{autoVisionResult.width_cm} cm</strong>
                     </span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       autoVisionResult.severity === 'CRITICAL'
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                         : autoVisionResult.severity === 'HIGH'
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                           : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                     }`}>
-                      STATUS: {autoVisionResult.severity}
+                      {autoVisionResult.severity}
                     </span>
                   </div>
                 ) : (
                   <>
-                    <Info className="w-4 h-4 text-slate-500" />
-                    <span className="text-slate-400">Road surface clear. Move camera towards damaged asphalt or crack.</span>
+                    <AlertCircle className="w-4 h-4 text-slate-500" />
+                    <span className="text-slate-400">Point camera at the damaged road or cavity.</span>
                   </>
                 )}
               </div>
 
+              {/* Clean Submit Button */}
               <button
                 type="button"
                 onClick={handlePostDefect}
                 disabled={isAnalyzing}
-                className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center space-x-2.5 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                  autoVisionResult.is_spoof
-                    ? 'bg-red-900/70 border border-red-500/50 text-red-200 shadow-red-900/20'
-                    : autoVisionResult.detected
-                      ? (autoVisionResult.severity === 'CRITICAL'
-                          ? 'bg-gradient-to-r from-rose-600 via-pink-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-rose-500/30 ring-2 ring-rose-400/40'
-                          : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 hover:from-emerald-500 hover:to-cyan-400 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/40')
-                      : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 ring-2 ring-blue-400/40'
-                }`}
+                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center space-x-2 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/25"
               >
                 {isAnalyzing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>{isLocating ? 'Acquiring Live Device GPS...' : 'Transmitting to Higher Officials Dashboard...'}</span>
-                  </>
-                ) : autoVisionResult.is_spoof ? (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-red-300" />
-                    <span>Screen Detected (Scan Physical Road)</span>
-                  </>
-                ) : autoVisionResult.detected ? (
-                  <>
-                    <Camera className="w-4 h-4 text-white" />
-                    <span>Capture & Post Verified [{autoVisionResult.severity}] with Live GPS</span>
+                    <span>{isLocating ? 'Acquiring Device GPS...' : 'Submitting Defect Report...'}</span>
                   </>
                 ) : (
                   <>
                     <Camera className="w-4 h-4 text-white" />
-                    <span>Capture & Post Defect with Live GPS</span>
+                    <span>Submit Defect Report</span>
                   </>
                 )}
               </button>
@@ -891,15 +748,15 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           </div>
         </div>
 
-        {/* Right Column: Clean Telemetry, Corridor Selector, and Post Confirmation Card */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Right Column: Clean GPS Details & Inspection Card */}
+        <div className="lg:col-span-5 space-y-4">
 
-          {/* Live Telemetry Card */}
+          {/* GPS Coordinates Card */}
           <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-                <Navigation className="w-4 h-4 text-cyan-400" />
-                <span>Geospatial Location & Corridor Traffic</span>
+                <MapPin className="w-4 h-4 text-cyan-400" />
+                <span>Device GPS Coordinates</span>
               </h2>
               <button
                 type="button"
@@ -908,117 +765,88 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                 className="px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 text-xs font-semibold border border-blue-500/30 flex items-center space-x-1"
               >
                 <Crosshair className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-                <span>{isLocating ? 'Locating...' : 'Lock Device GPS'}</span>
+                <span>{isLocating ? 'Locating...' : 'Detect GPS'}</span>
               </button>
             </div>
 
-            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs font-mono space-y-1.5">
-              <div className="flex justify-between text-slate-300">
-                <span>Latitude / Longitude:</span>
-                {gpsLocation.acquired ? (
-                  <span className="text-emerald-400 font-bold">
-                    {gpsLocation.lat.toFixed(5)}, {gpsLocation.lng.toFixed(5)}
-                  </span>
-                ) : (
-                  <span className="text-emerald-400">
-                    {isLocating ? 'Acquiring Live GPS...' : 'Auto-captured on Submit'}
-                  </span>
-                )}
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>GPS Accuracy:</span>
-                {gpsLocation.acquired ? (
-                  <span className="text-cyan-400">±{gpsLocation.accuracy} meters</span>
-                ) : (
-                  <span className="text-slate-500">—</span>
-                )}
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Location Mode:</span>
-                <span className={gpsLocation.isRealDeviceGPS ? 'text-emerald-400 font-semibold' : (gpsLocation.acquired ? 'text-cyan-400' : 'text-slate-300')}>
-                  {gpsLocation.isRealDeviceGPS ? '🛰️ Live Mobile Hardware GPS' : (gpsLocation.status === 'preset' ? 'Simulation Corridor' : 'On-Demand (Captured on Submit)')}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+              <div className="flex justify-between items-center text-slate-300">
+                <span>Latitude:</span>
+                <span className="text-white font-bold text-sm">
+                  {gpsLocation.acquired ? gpsLocation.lat.toFixed(5) : '— (Acquires on Submit)'}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Address / Location:</span>
-                <span className="text-white font-sans text-right truncate max-w-[200px]">
-                  {gpsLocation.address}
+              <div className="flex justify-between items-center text-slate-300">
+                <span>Longitude:</span>
+                <span className="text-white font-bold text-sm">
+                  {gpsLocation.acquired ? gpsLocation.lng.toFixed(5) : '— (Acquires on Submit)'}
                 </span>
               </div>
-            </div>
-
-            <p className="text-xs text-slate-400 pt-1">
-              Select any corridor below to simulate reporting from different traffic congestion zones:
-            </p>
-
-            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-              {LOCATION_PRESETS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handlePresetChange(idx)}
-                  className={`w-full text-left p-2.5 rounded-xl border text-xs transition flex items-start justify-between ${
-                    selectedPresetIndex === idx
-                      ? 'bg-slate-800 border-cyan-500 text-white font-medium'
-                      : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-300'
-                  }`}
-                >
-                  <div className="space-y-0.5">
-                    <div className="font-semibold text-slate-200">{preset.name}</div>
-                    <div className="text-[11px] text-amber-400 font-mono">
-                      Traffic: {preset.traffic_tier}
-                    </div>
-                  </div>
-                  {preset.name.includes('Existing') ? (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                      Duplicate Test
-                    </span>
-                  ) : (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      New Defect
-                    </span>
-                  )}
-                </button>
-              ))}
+              <div className="flex justify-between text-slate-300 pt-1 border-t border-slate-900">
+                <span>Status:</span>
+                <span className={gpsLocation.acquired ? 'text-emerald-400 font-semibold' : 'text-cyan-400'}>
+                  {gpsLocation.acquired ? '📍 Device Location Locked' : 'Auto-captures when submitting'}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Clean Ready Status (Strictly NO message shown before clicking Post!) */}
-          {!reportResult && (
-            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 text-xs space-y-2 text-slate-400">
-              <div className="flex items-center space-x-2 text-slate-200 font-bold">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Live OpenCV Tracking Active</span>
-              </div>
-              <p className="leading-relaxed">
-                Aim at the damage. The OpenCV engine automatically determines whether it is a pothole or a crack and measures its size live in the viewfinder. Click <strong className="text-white">Post Defect</strong> to transmit to the Government Portal.
-              </p>
-            </div>
-          )}
+          {/* Defect Detection Summary Card */}
+          <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-3">
+            <h2 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Inspection Summary</span>
+            </h2>
 
-          {/* POST RESULT CARD (ONLY DISPLAYED AFTER CITIZEN CLICKS POST!) */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+              <div className="flex justify-between text-slate-300">
+                <span>Identified Defect:</span>
+                <span className="text-white font-semibold">
+                  {autoVisionResult.detected ? autoVisionResult.label : 'Scanning...'}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span>Severity:</span>
+                <span className={`font-bold ${
+                  autoVisionResult.severity === 'CRITICAL'
+                    ? 'text-rose-400'
+                    : autoVisionResult.severity === 'HIGH'
+                      ? 'text-amber-400'
+                      : 'text-cyan-400'
+                }`}>
+                  {autoVisionResult.detected ? autoVisionResult.severity : 'Normal'}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span>Estimated Depth:</span>
+                <span className="text-white">
+                  {autoVisionResult.detected ? `${autoVisionResult.depth_cm} cm` : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span>Estimated Width:</span>
+                <span className="text-white">
+                  {autoVisionResult.detected ? `${autoVisionResult.width_cm} cm` : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Post Result Card (Displayed Only After Submitting) */}
           {reportResult && (
-            <div className={`p-5 rounded-2xl border shadow-2xl transition-all space-y-4 ${
+            <div className={`p-5 rounded-2xl border shadow-2xl transition-all space-y-3 ${
               reportResult.duplicate_detected
                 ? 'bg-amber-950/30 border-amber-500/40 text-amber-100'
                 : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-100'
             }`}>
               
               <div className="flex items-center space-x-3">
-                {reportResult.duplicate_detected ? (
-                  <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-400 border border-amber-500/30">
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                ) : (
-                  <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400 border border-emerald-500/30">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                )}
+                <div className={`p-2 rounded-xl ${reportResult.duplicate_detected ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                  {reportResult.duplicate_detected ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                </div>
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight">
-                    {reportResult.duplicate_detected
-                      ? 'GEOSPATIAL DUPLICATE INTERCEPTED'
-                      : 'POSTED TO GOVERNMENT PORTAL'}
+                  <h3 className="text-sm font-bold">
+                    {reportResult.duplicate_detected ? 'DUPLICATE RECORD INTERCEPTED' : 'REPORT TRANSMITTED SUCCESSFULLY'}
                   </h3>
                   <div className="text-xs font-mono opacity-80">
                     Ticket Code: #{reportResult.ticket_code}
@@ -1026,50 +854,17 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                 </div>
               </div>
 
-              <p className="text-xs leading-relaxed opacity-90">
+              <p className="text-xs opacity-90 leading-relaxed">
                 {reportResult.message}
               </p>
 
-              {reportResult.defect && (
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1.5">
-                  <div className="text-cyan-300 font-bold flex items-center space-x-1.5 text-[11px]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>TRANSMITTED DEFECT DATA:</span>
-                  </div>
-                  <div className="text-slate-200">
-                    Classification: <strong className="text-white">{reportResult.defect.category_label}</strong>
-                  </div>
-                  <div className="text-emerald-400 font-semibold text-[11px]">
-                    📍 Real Live GPS: {reportResult.defect.location?.lat?.toFixed(5)}, {reportResult.defect.location?.lng?.toFixed(5)} ({reportResult.defect.location?.address || 'Captured on Submit'})
-                  </div>
-                  <div className="text-slate-400 text-[11px]">
-                    Dimensions: <strong className="text-amber-400">Depth {reportResult.defect.dimensions?.depth_cm || 10} cm</strong> • Width {reportResult.defect.dimensions?.width_cm || 45} cm
-                  </div>
-                  <div className="text-slate-400 text-[11px]">
-                    Government Priority: <strong className="text-rose-400">{reportResult.defect.ai_calculated_priority || 'HIGH'} (Score {reportResult.defect.ai_priority_score || 85}/100)</strong>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 pt-1">
-                <a
-                  href="/login"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 transition"
-                >
-                  <span>Open Higher Officials Portal to Verify (Column 2)</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => setReportResult(null)}
-                  className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-lg border border-slate-700 text-slate-300 transition"
-                >
-                  Done & Ready for Next Defect
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setReportResult(null)}
+                className="w-full mt-2 py-2 bg-slate-900 hover:bg-slate-800 text-xs font-semibold rounded-lg border border-slate-700 text-slate-200 transition"
+              >
+                Done / Capture Next Defect
+              </button>
             </div>
           )}
 
