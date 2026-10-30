@@ -16,8 +16,12 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
 
   const [govUser, setGovUser] = useState(() => {
-    const saved = localStorage.getItem('infra_ai_gov_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('infra_ai_gov_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [defects, setDefects] = useState([]);
