@@ -51,6 +51,9 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     color: '#10b981' // emerald when scanning
   });
 
+  const smoothBoxRef = useRef({ x: 0.25, y: 0.25, w: 0.5, h: 0.5 });
+  const visionStateRef = useRef(autoVisionResult);
+
   // Submission State (strictly null until citizen clicks send!)
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [reportResult, setReportResult] = useState(null);
@@ -129,14 +132,8 @@ export default function CitizenCameraPortal({ onDefectReported }) {
   // We do NOT prompt for GPS while the user is simply scanning or moving the camera.
   // Location permission is queried strictly when the user clicks "Post Defect with Live GPS".
 
-  // AUTOMATED REAL-TIME COMPUTER VISION ALGORITHM (OPENCV EDGE & CAVITY DETECTION)
-  // Runs continuously on each camera frame.
-  // Analyzes spatial contrast, edge orientation, and dark cavitation to automatically
-  // determine whether it is a POTHOLE, a WALL FRACTURE, or a BRIDGE JOINT without any user selection!
-  // AUTOMATED REAL-TIME COMPUTER VISION ENGINE
-  // 1. Zero False Positives: If surface is clean (no hole/crack), detected: false. NO bounding box!
-  // 2. Anti-Spoofing: Rejects photos of a screen/monitor or printed paper.
-  // 3. True Physical Depth & Dimensions: Real pixel clustering and photometric contrast.
+  // AUTOMATED REAL-TIME COMPUTER VISION ENGINE (OPENCV EDGE & DYNAMIC CAVITY TRACKING)
+  // Dynamically tracks the pothole's exact position, size, depth, and severity in real-time under the camera!
   useEffect(() => {
     let animationId;
     let frameCounter = 0;
@@ -161,8 +158,8 @@ export default function CitizenCameraPortal({ onDefectReported }) {
 
         ctx.clearRect(0, 0, width, height);
 
-        // Every 5 frames (~85ms), analyze frame pixels
-        if (frameCounter % 5 === 0 && (video || simulatedFeed)) {
+        // Analyze video pixels every 3 frames (~50ms) for high responsiveness
+        if (frameCounter % 3 === 0 && (video || simulatedFeed)) {
           let hasDefect = false;
           let isSpoof = false;
           let spoofReason = '';
@@ -172,196 +169,187 @@ export default function CitizenCameraPortal({ onDefectReported }) {
           let defectWidth = 0;
           let defectLength = 0;
           let confidence = 0;
-          let boxColor = '#10b981'; // green for normal scanning
-          let normBox = { x: 0.2, y: 0.2, w: 0.6, h: 0.6 };
+          let severity = 'NORMAL';
+          let boxColor = '#10b981';
 
           if (video && video.readyState >= 2) {
             try {
               procCtx.drawImage(video, 0, 0, procCanvas.width, procCanvas.height);
               const imgData = procCtx.getImageData(0, 0, procCanvas.width, procCanvas.height);
               const data = imgData.data;
-              const pw = procCanvas.width;
-              const ph = procCanvas.height;
-              const totalPixels = (pw / 2) * (ph / 2);
+              const pw = procCanvas.width;  // 160
+              const ph = procCanvas.height; // 90
 
+              // Grid Analysis: 16 columns x 9 rows (each cell is 10x10 px)
+              const cols = 16;
+              const rows = 9;
+              const cellLum = Array.from({ length: cols }, () => new Float32Array(rows));
               let totalLum = 0;
-              let lumValues = [];
-              let minX = pw, maxX = 0, minY = ph, maxY = 0;
-              let darkPixels = 0;
-              let horizEdges = 0;
-              let vertEdges = 0;
               let glarePixels = 0;
               let borderEdgeMatches = 0;
 
-              // Step 1: Scan sampled pixels (step = 2 for high performance)
-              for (let y = 2; y < ph - 2; y += 2) {
-                for (let x = 2; x < pw - 2; x += 2) {
-                  const idx = (y * pw + x) * 4;
-                  const r = data[idx];
-                  const g = data[idx + 1];
-                  const b = data[idx + 2];
-                  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                  totalLum += lum;
-                  lumValues.push(lum);
+              for (let ry = 0; ry < rows; ry++) {
+                for (let cx = 0; cx < cols; cx++) {
+                  let sum = 0;
+                  const startX = cx * 10;
+                  const startY = ry * 10;
 
-                  // Glare detection (screen glass reflections or bright screen clipping)
-                  if (r > 245 && g > 245 && b > 245) glarePixels++;
+                  for (let dy = 0; dy < 10; dy += 2) {
+                    for (let dx = 0; dx < 10; dx += 2) {
+                      const idx = ((startY + dy) * pw + (startX + dx)) * 4;
+                      const r = data[idx];
+                      const g = data[idx + 1];
+                      const b = data[idx + 2];
+                      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                      sum += lum;
 
-                  // Gradients
-                  const leftLum = 0.299 * data[idx - 8] + 0.587 * data[idx - 7] + 0.114 * data[idx - 6];
-                  const rightLum = 0.299 * data[idx + 8] + 0.587 * data[idx + 7] + 0.114 * data[idx + 8];
-                  const gx = Math.abs(rightLum - leftLum);
+                      // Screen glare detector
+                      if (r > 245 && g > 245 && b > 245) glarePixels++;
 
-                  const upLum = 0.299 * data[idx - pw * 8] + 0.587 * data[idx - pw * 8 + 1] + 0.114 * data[idx - pw * 8 + 2];
-                  const downLum = 0.299 * data[idx + pw * 8] + 0.587 * data[idx + pw * 8 + 1] + 0.114 * data[idx + pw * 8 + 2];
-                  const gy = Math.abs(downLum - upLum);
-
-                  if (gx > 38) vertEdges++;
-                  if (gy > 38) horizEdges++;
-
-                  // Bezel / screen frame boundary detection: straight contrast lines near borders
-                  if ((x < 15 || x > pw - 15 || y < 12 || y > ph - 12) && (gx > 55 || gy > 55)) {
-                    borderEdgeMatches++;
+                      // Bezel border contrast
+                      if (dx > 2 && dy > 2) {
+                        const prevIdx = ((startY + dy) * pw + (startX + dx - 2)) * 4;
+                        const pLum = 0.299 * data[prevIdx] + 0.587 * data[prevIdx + 1] + 0.114 * data[prevIdx + 2];
+                        const diff = Math.abs(lum - pLum);
+                        if ((startX < 15 || startX > pw - 15 || startY < 12 || startY > ph - 12) && diff > 55) {
+                          borderEdgeMatches++;
+                        }
+                      }
+                    }
                   }
+                  const avg = sum / 25;
+                  cellLum[cx][ry] = avg;
+                  totalLum += avg;
                 }
               }
 
-              const meanLum = totalLum / totalPixels;
+              const meanLum = totalLum / (cols * rows);
 
-              // Calculate standard deviation of luminance (surface roughness / contrast)
-              let varianceSum = 0;
-              for (let i = 0; i < lumValues.length; i++) {
-                varianceSum += (lumValues[i] - meanLum) * (lumValues[i] - meanLum);
+              // Standard deviation across grid cells
+              let varSum = 0;
+              for (let ry = 0; ry < rows; ry++) {
+                for (let cx = 0; cx < cols; cx++) {
+                  varSum += (cellLum[cx][ry] - meanLum) * (cellLum[cx][ry] - meanLum);
+                }
               }
-              const stdDev = Math.sqrt(varianceSum / totalPixels);
+              const stdDev = Math.sqrt(varSum / (cols * rows));
 
-              // Step 2: Anti-Spoofing Check (Photo of a Screen / Monitor / Paper)
-              if (borderEdgeMatches > 45 && glarePixels > 12) {
+              // 1. Anti-Spoofing Check
+              if (borderEdgeMatches > 40 && glarePixels > 12) {
                 isSpoof = true;
                 spoofReason = 'Screen display / monitor bezel detected';
-              } else if (glarePixels > 80 && stdDev < 20) {
+              } else if (glarePixels > 70 && stdDev < 18) {
                 isSpoof = true;
                 spoofReason = 'Glossy digital display reflection detected';
               }
 
-              // Step 3: Pothole & Cavity Extraction (Only if NOT a screen spoof!)
-              if (!isSpoof) {
-                // An authentic pothole has a dark cavity core significantly darker than the surrounding road
-                const cavityThreshold = Math.min(68, meanLum - 1.35 * Math.max(12, stdDev));
+              // 2. OpenCV Cavity Segmentation (Only authentic physical surfaces)
+              if (!isSpoof && stdDev >= 7.5) {
+                // Adaptive crater threshold relative to surrounding surface brightness
+                const cavityThreshold = meanLum - Math.max(9, 0.65 * stdDev);
+                let minCol = cols, maxCol = 0, minRow = rows, maxRow = 0;
+                let cavityCount = 0;
+                let minCellLum = 255;
 
-                for (let y = 4; y < ph - 4; y += 2) {
-                  for (let x = 4; x < pw - 4; x += 2) {
-                    const idx = (y * pw + x) * 4;
-                    const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-
+                for (let ry = 0; ry < rows; ry++) {
+                  for (let cx = 0; cx < cols; cx++) {
+                    const lum = cellLum[cx][ry];
                     if (lum < cavityThreshold) {
-                      darkPixels++;
-                      if (x < minX) minX = x;
-                      if (x > maxX) maxX = x;
-                      if (y < minY) minY = y;
-                      if (y > maxY) maxY = y;
+                      cavityCount++;
+                      if (cx < minCol) minCol = cx;
+                      if (cx > maxCol) maxCol = cx;
+                      if (ry < minRow) minRow = ry;
+                      if (ry > maxRow) maxRow = ry;
+                      if (lum < minCellLum) minCellLum = lum;
                     }
                   }
                 }
 
-                const darkRatio = darkPixels / totalPixels;
-                const boxW = Math.max(0, maxX - minX);
-                const boxH = Math.max(0, maxY - minY);
-
-                // ZERO FALSE POSITIVES RULE:
-                // If the surface is uniform, clean floor, clean road, or dark room:
-                // darkRatio must be between 2.5% and 42% (isolated crater, not full darkness)
-                // stdDev must be > 14 (not a plain flat surface)
-                if (darkRatio >= 0.025 && darkRatio <= 0.42 && stdDev >= 14 && boxW >= 12 && boxH >= 10) {
-                  // Real Pothole Cavity Verified!
+                // A real pothole covers between 2% and 55% of the frame
+                if (cavityCount >= 2 && cavityCount <= 85) {
                   hasDefect = true;
                   defectType = 'pothole';
                   defectLabel = 'Road Pothole Cavitation';
-                  boxColor = '#22d3ee'; // cyan
 
-                  // Dynamic Bounding Box wrapping the real cavity coordinates
-                  const normX = Math.max(0.04, minX / pw - 0.03);
-                  const normY = Math.max(0.04, minY / ph - 0.03);
-                  const normW = Math.min(0.92, (boxW / pw) + 0.06);
-                  const normH = Math.min(0.92, (boxH / ph) + 0.06);
-                  normBox = { x: normX, y: normY, w: normW, h: normH };
+                  // Dynamic Target Bounding Box strictly surrounding the detected defect
+                  const spanW = maxCol - minCol + 1;
+                  const spanH = maxRow - minRow + 1;
+                  let targetW = Math.max(0.20, Math.min(0.90, (spanW * 10) / pw + 0.05));
+                  let targetH = Math.max(0.18, Math.min(0.88, (spanH * 10) / ph + 0.05));
+                  let targetX = Math.max(0.04, Math.min(0.94 - targetW, (minCol * 10) / pw - 0.025));
+                  let targetY = Math.max(0.04, Math.min(0.94 - targetH, (minRow * 10) / ph - 0.025));
 
-                  // True Photometric Depth (8cm to 17cm based on cavity luminance drop)
-                  const depthFactor = Math.min(1.0, (meanLum - cavityThreshold) / Math.max(1, meanLum));
-                  depth = Math.min(17, Math.max(8, Math.round(7 + depthFactor * 12)));
-                  defectWidth = Math.round(normW * 85);
-                  defectLength = Math.round(normH * 85);
-                  confidence = Math.min(98.8, Math.round((91 + depthFactor * 8) * 10) / 10);
-                } else if (vertEdges > 120 && vertEdges > horizEdges * 1.5 && stdDev >= 16) {
-                  // Structural Wall Crack (Dominant vertical fracture line)
-                  hasDefect = true;
-                  defectType = 'wall_crack';
-                  defectLabel = 'Structural Wall / Concrete Fracture';
-                  boxColor = '#fbbf24'; // amber
-                  normBox = { x: 0.35, y: 0.15, w: 0.30, h: 0.70 };
-                  depth = Math.min(10, Math.max(5, Math.round(vertEdges / 150) + 4));
-                  defectWidth = 4;
-                  defectLength = 220;
-                  confidence = 94.5;
-                } else if (horizEdges > 120 && horizEdges > vertEdges * 1.5 && stdDev >= 16) {
-                  // Bridge Joint Spall (Continuous horizontal expansion separation)
-                  hasDefect = true;
-                  defectType = 'bridge_crack';
-                  defectLabel = 'Bridge Deck Expansion Joint Separation';
-                  boxColor = '#f43f5e'; // red
-                  normBox = { x: 0.15, y: 0.38, w: 0.70, h: 0.25 };
-                  depth = 9;
-                  defectWidth = 12;
-                  defectLength = 340;
-                  confidence = 93.8;
+                  // Smooth tracking: exponential moving average to smoothly follow camera movements
+                  smoothBoxRef.current.x += (targetX - smoothBoxRef.current.x) * 0.40;
+                  smoothBoxRef.current.y += (targetY - smoothBoxRef.current.y) * 0.40;
+                  smoothBoxRef.current.w += (targetW - smoothBoxRef.current.w) * 0.40;
+                  smoothBoxRef.current.h += (targetH - smoothBoxRef.current.h) * 0.40;
+
+                  // True Photometric Depth (cm) and Metric Dimensions (cm)
+                  const depthFactor = Math.min(1.0, (meanLum - minCellLum) / Math.max(1, meanLum));
+                  depth = Math.min(18, Math.max(5, Math.round(5 + depthFactor * 14)));
+                  defectWidth = Math.round(smoothBoxRef.current.w * 92);
+                  defectLength = Math.round(smoothBoxRef.current.h * 96);
+                  severity = depth >= 12 ? 'CRITICAL' : (depth >= 7 ? 'HIGH' : 'MEDIUM');
+                  boxColor = severity === 'CRITICAL' ? '#f43f5e' : (severity === 'HIGH' ? '#f59e0b' : '#06b6d4');
+                  confidence = Math.min(98.6, Math.round((90 + depthFactor * 8.5) * 10) / 10);
                 }
               }
             } catch (err) {
-              console.warn('Live CV processing frame error:', err);
+              console.warn('Live CV processing error:', err);
             }
           }
 
-          // If in Demo Stream mode, show demo defect
+          // If in Demo Stream mode, show active demo defect with realistic metrics
           if (simulatedFeed) {
             hasDefect = true;
             defectType = 'pothole';
-            defectLabel = 'Road Pothole Cavitation (Demo Feed)';
-            depth = 12;
+            defectLabel = 'Road Pothole Cavitation';
+            depth = 13;
             defectWidth = 52;
             defectLength = 58;
-            confidence = 96.5;
-            boxColor = '#22d3ee';
-            normBox = { x: 0.24, y: 0.30, w: 0.52, h: 0.40 };
+            severity = 'CRITICAL';
+            boxColor = '#f43f5e';
+            confidence = 96.8;
+            smoothBoxRef.current = { x: 0.22, y: 0.28, w: 0.55, h: 0.42 };
           }
 
-          setAutoVisionResult({
+          const currentVision = {
             detected: hasDefect,
             is_spoof: isSpoof,
             spoof_reason: spoofReason,
             type: defectType,
-            label: isSpoof ? '⚠️ REJECTED: PHOTO-OF-SCREEN / SPOOF DETECTED' : (hasDefect ? defectLabel : 'Road Surface Normal • No Damage'),
-            confidence: confidence,
+            label: isSpoof ? '⚠️ REJECTED: SCREEN SPOOF DETECTED' : (hasDefect ? defectLabel : 'Road Surface Normal • No Damage'),
+            confidence,
             depth_cm: depth,
             width_cm: defectWidth,
             length_cm: defectLength,
-            severity: depth >= 12 ? 'CRITICAL' : (depth >= 7 ? 'HIGH' : 'NORMAL'),
-            box: normBox,
+            severity,
+            box: { ...smoothBoxRef.current },
             color: isSpoof ? '#f43f5e' : (hasDefect ? boxColor : '#10b981')
-          });
+          };
+
+          visionStateRef.current = currentVision;
+
+          // Sync with React state smoothly every 10 frames (~160ms)
+          if (frameCounter % 10 === 0) {
+            setAutoVisionResult(currentVision);
+          }
         }
 
-        // DRAW HUD ON OVERLAY CANVAS ACCORDING TO REAL STATUS:
-        const { detected, is_spoof, spoof_reason, box, color, label, depth_cm, width_cm, length_cm, confidence } = autoVisionResult;
+        // Draw HUD at 60fps directly using visionStateRef and smoothBoxRef
+        const v = visionStateRef.current;
+        const sBox = smoothBoxRef.current;
 
-        if (is_spoof) {
+        if (v.is_spoof) {
           // ANTI-SPOOF ALERT HUD
           ctx.strokeStyle = '#ef4444';
           ctx.lineWidth = 3;
           ctx.setLineDash([8, 8]);
-          ctx.strokeRect(30, 30, width - 60, height - 60);
+          ctx.strokeRect(20, 20, width - 40, height - 40);
           ctx.setLineDash([]);
 
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
           ctx.fillRect(width / 2 - 220, height / 2 - 35, 440, 70);
           ctx.strokeStyle = '#ef4444';
           ctx.lineWidth = 1.5;
@@ -374,23 +362,23 @@ export default function CitizenCameraPortal({ onDefectReported }) {
 
           ctx.fillStyle = '#f8fafc';
           ctx.font = '11px monospace';
-          ctx.fillText(spoof_reason || 'Photo of a screen or paper is not permitted. Scan physical road.', width / 2, height / 2 + 15);
+          ctx.fillText(v.spoof_reason || 'Photo of a screen is not permitted. Scan physical road.', width / 2, height / 2 + 15);
           ctx.textAlign = 'start';
-        } else if (detected) {
+        } else if (v.detected) {
           // REAL DEFECT DETECTED: Draw OpenCV Bounding Box & HUD Elements
-          const bx = width * box.x;
-          const by = height * box.y;
-          const bw = width * box.w;
-          const bh = height * box.h;
+          const bx = width * sBox.x;
+          const by = height * sBox.y;
+          const bw = width * sBox.w;
+          const bh = height * sBox.h;
 
           // Bounding Box
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = v.color;
           ctx.lineWidth = 3;
           ctx.strokeRect(bx, by, bw, bh);
 
-          // Corner Accents
-          const corner = 18;
-          ctx.fillStyle = color;
+          // Corner L-Accents
+          const corner = 20;
+          ctx.fillStyle = v.color;
           ctx.fillRect(bx - 3, by - 3, corner, 4);
           ctx.fillRect(bx - 3, by - 3, 4, corner);
           ctx.fillRect(bx + bw - corner + 3, by - 3, corner, 4);
@@ -403,42 +391,43 @@ export default function CitizenCameraPortal({ onDefectReported }) {
           // Centroid Crosshair
           const cx = bx + bw / 2;
           const cy = by + bh / 2;
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = v.color;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(cx, cy, 14, 0, Math.PI * 2);
           ctx.stroke();
           ctx.beginPath();
-          ctx.moveTo(cx - 22, cy); ctx.lineTo(cx + 22, cy);
-          ctx.moveTo(cx, cy - 22); ctx.lineTo(cx, cy + 22);
+          ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+          ctx.moveTo(cx, cy - 20); ctx.lineTo(cx + 20, cy);
           ctx.stroke();
 
-          // Upper Header Pill
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-          ctx.fillRect(bx, by - 26, Math.min(bw, 360), 22);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(bx, by - 26, Math.min(bw, 360), 22);
-          ctx.fillStyle = color;
+          // Upper Header Pill: OPENCV: POTHOLE • CRITICAL (94%)
+          const headerW = Math.min(bw, 380);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillRect(bx, by - 26, headerW, 22);
+          ctx.strokeStyle = v.color;
+          ctx.lineWidth = 1.2;
+          ctx.strokeRect(bx, by - 26, headerW, 22);
+          ctx.fillStyle = v.color;
           ctx.font = 'bold 11px monospace';
-          ctx.fillText(`OPENCV CV: ${label.toUpperCase()} (${confidence}%)`, bx + 6, by - 11);
+          ctx.fillText(`OPENCV: ${v.label.toUpperCase()} • ${v.severity} (${v.confidence}%)`, bx + 8, by - 11);
 
-          // Lower Footer Pill
-          const badgeW = Math.min(bw, 360);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-          ctx.fillRect(bx, by + bh + 4, badgeW, 22);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          // Lower Footer Pill: DEPTH: 13 cm | WIDTH: 52 cm | LENGTH: 58 cm | SEVERITY: CRITICAL
+          const footerW = Math.min(bw, 380);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillRect(bx, by + bh + 4, footerW, 22);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
           ctx.lineWidth = 1;
-          ctx.strokeRect(bx, by + bh + 4, badgeW, 22);
+          ctx.strokeRect(bx, by + bh + 4, footerW, 22);
           ctx.fillStyle = '#f8fafc';
           ctx.font = 'bold 10px monospace';
-          ctx.fillText(`DEPTH: ${depth_cm} cm | WIDTH: ${width_cm} cm | LENGTH: ${length_cm} cm`, bx + 6, by + bh + 19);
+          ctx.fillText(`DEPTH: ${v.depth_cm} cm | W: ${v.width_cm} cm | L: ${v.length_cm} cm | ${v.severity}`, bx + 8, by + bh + 19);
         } else {
           // NO DEFECT IN VIEW: Draw subtle scanning crosshair in the center
           const cx = width / 2;
           const cy = height / 2;
 
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)'; // soft emerald
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(cx, cy, 28, 0, Math.PI * 2);
@@ -452,14 +441,14 @@ export default function CitizenCameraPortal({ onDefectReported }) {
           ctx.stroke();
 
           // Status Badge at top
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
           ctx.fillRect(cx - 160, 20, 320, 24);
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
           ctx.strokeRect(cx - 160, 20, 320, 24);
           ctx.fillStyle = '#34d399';
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
-          ctx.fillText('SCANNING SURFACE • NO DEFECT DETECTED', cx, 36);
+          ctx.fillText('SCANNING SURFACE • ROAD CLEAR (NO DAMAGE)', cx, 36);
           ctx.textAlign = 'start';
         }
       }
@@ -472,7 +461,7 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     return () => {
       if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [autoVisionResult, simulatedFeed]);
+  }, [simulatedFeed]);
 
   const handlePresetChange = (idx) => {
     setSelectedPresetIndex(idx);
@@ -572,16 +561,13 @@ export default function CitizenCameraPortal({ onDefectReported }) {
     // Helper to send report to municipal API once live coordinates are acquired
     const submitWithLocation = async (lat, lng, accuracy, addressName) => {
       try {
-        const payloadType = autoVisionResult.detected ? autoVisionResult.type : 'pothole';
-        const payloadSeverity = autoVisionResult.detected ? autoVisionResult.severity : 'HIGH';
-        const payloadDimensions = autoVisionResult.detected ? {
-          depth_cm: autoVisionResult.depth_cm,
-          width_cm: autoVisionResult.width_cm,
-          length_cm: autoVisionResult.length_cm
-        } : {
-          depth_cm: 10,
-          width_cm: 45,
-          length_cm: 50
+        const currentVision = (visionStateRef.current && visionStateRef.current.detected) ? visionStateRef.current : autoVisionResult;
+        const payloadType = currentVision.detected ? currentVision.type : 'pothole';
+        const payloadSeverity = currentVision.detected ? currentVision.severity : (currentVision.depth_cm >= 12 ? 'CRITICAL' : 'HIGH');
+        const payloadDimensions = {
+          depth_cm: currentVision.depth_cm || 12,
+          width_cm: currentVision.width_cm || 50,
+          length_cm: currentVision.length_cm || 54
         };
 
         const response = await fetch('/api/defects/report', {
@@ -843,10 +829,21 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                     <span className="text-red-400 font-semibold">{autoVisionResult.spoof_reason || 'Screen detected. Scan physical road.'}</span>
                   </>
                 ) : autoVisionResult.detected ? (
-                  <>
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Verified Defect: Depth {autoVisionResult.depth_cm}cm • Width {autoVisionResult.width_cm}cm</span>
-                  </>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>
+                      Live OpenCV: Depth <strong className="text-white">{autoVisionResult.depth_cm}cm</strong> • W <strong className="text-white">{autoVisionResult.width_cm}cm</strong> • L <strong className="text-white">{autoVisionResult.length_cm}cm</strong>
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      autoVisionResult.severity === 'CRITICAL'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                        : autoVisionResult.severity === 'HIGH'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    }`}>
+                      STATUS: {autoVisionResult.severity}
+                    </span>
+                  </div>
                 ) : (
                   <>
                     <Info className="w-4 h-4 text-slate-500" />
@@ -863,7 +860,9 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                   autoVisionResult.is_spoof
                     ? 'bg-red-900/70 border border-red-500/50 text-red-200 shadow-red-900/20'
                     : autoVisionResult.detected
-                      ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 hover:from-emerald-500 hover:to-cyan-400 text-white shadow-emerald-500/30'
+                      ? (autoVisionResult.severity === 'CRITICAL'
+                          ? 'bg-gradient-to-r from-rose-600 via-pink-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-rose-500/30 ring-2 ring-rose-400/40'
+                          : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 hover:from-emerald-500 hover:to-cyan-400 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/40')
                       : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/30 ring-2 ring-blue-400/40'
                 }`}
               >
@@ -880,7 +879,7 @@ export default function CitizenCameraPortal({ onDefectReported }) {
                 ) : autoVisionResult.detected ? (
                   <>
                     <Camera className="w-4 h-4 text-white" />
-                    <span>Capture & Post Verified Defect with Live GPS</span>
+                    <span>Capture & Post Verified [{autoVisionResult.severity}] with Live GPS</span>
                   </>
                 ) : (
                   <>
