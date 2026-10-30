@@ -43,6 +43,30 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Format duration: formats into hours and minutes if it crosses 60 mins (e.g. 75m -> "1 hr 15 mins", 120m -> "2 hrs")
+function formatDuration(minutes) {
+  if (minutes === null || minutes === undefined) return '0 mins';
+  const val = Number(minutes);
+  if (isNaN(val) || val <= 0) return '0 mins';
+
+  if (val < 60) {
+    if (val % 1 !== 0) {
+      return `${val.toFixed(1)} mins`;
+    }
+    return `${Math.round(val)} min${Math.round(val) === 1 ? '' : 's'}`;
+  }
+
+  const totalMin = Math.round(val);
+  const hours = Math.floor(totalMin / 60);
+  const remainingMins = totalMin % 60;
+  const hrText = `${hours} hr${hours > 1 ? 's' : ''}`;
+
+  if (remainingMins === 0) {
+    return hrText;
+  }
+  return `${hrText} ${remainingMins} min${remainingMins > 1 ? 's' : ''}`;
+}
+
 // Generate fallback multi-point real road curve if external routing engine is temporarily unavailable
 function generateCurvedRoadPath(oLat, oLng, dLat, dLng, isDetour = false) {
   const steps = 24;
@@ -433,18 +457,18 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
 
     if (!hasAlt) {
       recommendedRoute = 'direct';
-      recommendationReason = `No alternative road exists to reach this destination. Primary route is the only solution (Total: ${directTotalETAMin} mins, includes 1 min crawl for 1 critical pothole).`;
+      recommendationReason = `No alternative road exists to reach this destination. Primary route is the only solution (Total: ${formatDuration(directTotalETAMin)}, includes 1 min crawl for 1 critical pothole).`;
     } else if (altTotalETAMin < directTotalETAMin) {
       recommendedRoute = 'safe';
       timeDifference = Math.round((directTotalETAMin - altTotalETAMin) * 10) / 10;
-      recommendationReason = `Alternative route is fastest by ${timeDifference} min! Arrives in ${altTotalETAMin} mins, skipping ${potholeCount} critical potholes and avoiding ${delayMin} mins of crawl delays.`;
+      recommendationReason = `Alternative route is fastest by ${formatDuration(timeDifference)}! Arrives in ${formatDuration(altTotalETAMin)}, skipping ${potholeCount} critical potholes and avoiding ${delayMin} mins of crawl delays.`;
     } else if (directTotalETAMin < altTotalETAMin) {
       recommendedRoute = 'direct';
       timeDifference = Math.round((altTotalETAMin - directTotalETAMin) * 10) / 10;
-      recommendationReason = `Primary route is fastest by ${timeDifference} min (takes ${directTotalETAMin} mins vs ${altTotalETAMin} mins detour). Even with the ${delayMin} min pothole delay, taking the detour would waste more time!`;
+      recommendationReason = `Primary route is fastest by ${formatDuration(timeDifference)} (takes ${formatDuration(directTotalETAMin)} vs ${formatDuration(altTotalETAMin)} detour). Even with the ${delayMin} min pothole delay, taking the detour would waste more time!`;
     } else {
       recommendedRoute = 'safe';
-      recommendationReason = `Both routes take ${directTotalETAMin} mins. Alternative route recommended to eliminate vehicle shock and axle damage.`;
+      recommendationReason = `Both routes take ${formatDuration(directTotalETAMin)}. Alternative route recommended to eliminate vehicle shock and axle damage.`;
     }
 
     return {
@@ -691,15 +715,15 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                       </span>
                     ) : (
                       <span className="text-[10px] px-1.5 py-0.5 bg-rose-500/20 text-rose-300 rounded font-bold">
-                        SLOWER (+{calculatedRoutes?.timeDifference}m)
+                        SLOWER (+{formatDuration(calculatedRoutes?.timeDifference)})
                       </span>
                     )}
                   </div>
 
-                  {/* Total ETA */}
+                  {/* Total ETA (Formatted in Hours and Mins if over 60 mins) */}
                   <div className="flex items-baseline space-x-2 pt-1">
                     <span className="text-2xl font-black text-white">
-                      {calculatedRoutes?.direct.totalETAMin} mins
+                      {formatDuration(calculatedRoutes?.direct.totalETAMin)}
                     </span>
                     <span className="text-xs text-slate-400">
                       ({calculatedRoutes?.direct.distanceKm} km)
@@ -715,7 +739,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                   {/* Delay Breakdown Formula */}
                   <div className="text-[11px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
                     <div className="text-slate-400">
-                      Drive: <strong>{calculatedRoutes?.direct.baseDrivingMin}m</strong> + Pothole Delay:{' '}
+                      Drive: <strong>{formatDuration(calculatedRoutes?.direct.baseDrivingMin)}</strong> + Pothole Delay:{' '}
                       <strong className="text-rose-400">
                         +{calculatedRoutes?.direct.potholeDelayMin}m
                       </strong>
@@ -753,15 +777,15 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                         </span>
                       ) : (
                         <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded font-bold">
-                          ALTERNATIVE (+{calculatedRoutes?.timeDifference}m)
+                          ALTERNATIVE (+{formatDuration(calculatedRoutes?.timeDifference)})
                         </span>
                       )}
                     </div>
 
-                    {/* Total ETA */}
+                    {/* Total ETA (Formatted in Hours and Mins if over 60 mins) */}
                     <div className="flex items-baseline space-x-2 pt-1">
                       <span className="text-2xl font-black text-white">
-                        {calculatedRoutes?.safe?.totalETAMin} mins
+                        {formatDuration(calculatedRoutes?.safe?.totalETAMin)}
                       </span>
                       <span className="text-xs text-slate-400">
                         ({calculatedRoutes?.safe?.distanceKm} km)
@@ -777,7 +801,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     {/* Delay Breakdown Formula */}
                     <div className="text-[11px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
                       <div className="text-slate-400">
-                        Drive: <strong>{calculatedRoutes?.safe?.baseDrivingMin}m</strong> + Pothole Delay:{' '}
+                        Drive: <strong>{formatDuration(calculatedRoutes?.safe?.baseDrivingMin)}</strong> + Pothole Delay:{' '}
                         <strong className="text-emerald-400">+0m</strong>
                       </div>
                       <div className="text-[10px] text-emerald-400 mt-1 flex items-center space-x-1">
