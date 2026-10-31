@@ -9,6 +9,7 @@ require('dotenv').config();
 const { findDuplicateDefect, findClosestRoad, calculateHaversineDistance } = require('./services/spatial');
 const { calculateAIPriority } = require('./services/prioritization');
 const { analyzeImageWithAI } = require('./services/vision_ai');
+const supabaseService = require('./services/supabase');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +50,15 @@ app.post('/api/system/set-api-key', (req, res) => {
     success: true,
     message: 'Google Gemini 2.5 Flash Vision API key configured successfully! Vision inference is now active.',
     active_engine: 'Google Gemini 2.5 Flash Vision API'
+  });
+});
+
+app.get('/api/system/db-status', (req, res) => {
+  res.json({
+    success: true,
+    supabase_configured: supabaseService.isSupabaseActive(),
+    database_type: supabaseService.isSupabaseActive() ? 'Supabase PostgreSQL + PostGIS' : 'In-Memory State + Seed Sync',
+    storage_type: supabaseService.isSupabaseActive() ? 'Supabase Storage (defect-media)' : 'Local Static Images'
   });
 });
 
@@ -544,6 +554,11 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
 
   defectsData.unshift(newDefect);
 
+  // Asynchronously persist to Supabase PostgreSQL database if active
+  if (supabaseService.isSupabaseActive()) {
+    supabaseService.insertDefectToDb(newDefect).catch(err => console.warn('Supabase async sync note:', err.message));
+  }
+
   res.status(201).json({
     success: true,
     action: 'NEW_DEFECT_DISPATCHED',
@@ -755,6 +770,11 @@ app.post('/api/defects/report', async (req, res) => {
 
   defectsData.unshift(newDefect);
 
+  // Asynchronously persist to Supabase PostgreSQL database if active
+  if (supabaseService.isSupabaseActive()) {
+    supabaseService.insertDefectToDb(newDefect).catch(err => console.warn('Supabase async sync note:', err.message));
+  }
+
   res.status(201).json({
     success: true,
     duplicate_detected: false,
@@ -871,6 +891,11 @@ app.post('/api/vehicle/telemetry', (req, res) => {
   };
 
   defectsData.unshift(newDefect);
+
+  // Asynchronously persist to Supabase PostgreSQL database if active
+  if (supabaseService.isSupabaseActive()) {
+    supabaseService.insertDefectToDb(newDefect).catch(err => console.warn('Supabase async sync note:', err.message));
+  }
 
   res.status(201).json({
     success: true,
