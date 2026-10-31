@@ -1263,7 +1263,7 @@
     "type": "pothole",
     "category_label": "Vehicle-Detected Severe Crater",
     "title": "Severe Pothole scanned by Patrol Car 03 @ 44 km/h",
-    "description": "YOLOv26 mobile sweep identified 14cm road defect on Indiranagar 100ft Road. Assigned to Indiranagar Sub-Division Er. Deepa Nair. Fully excavated and compacted.",
+    "description": "YOLOv8 mobile sweep identified 14cm road defect on Indiranagar 100ft Road. Assigned to Indiranagar Sub-Division Er. Deepa Nair. Fully excavated and compacted.",
     "severity": "CRITICAL",
     "severity_score": 93,
     "confidence_pct": 98.4,

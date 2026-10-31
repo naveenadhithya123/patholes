@@ -147,7 +147,7 @@ export default function CarTrackingView({ onBack, defects = [], onDefectUpdated 
                 <span>Automated Mobile Road AI</span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                YOLOv26 Computer Vision Scanner
+                YOLOv8 Computer Vision Scanner
               </span>
             </div>
 
@@ -211,7 +211,7 @@ export default function CarTrackingView({ onBack, defects = [], onDefectUpdated 
             </span>
           </div>
           <span className="text-[11px] font-mono text-cyan-400">
-            Real-time Sub-Bumper LiDAR & YOLOv26 Camera Active
+            Real-time Sub-Bumper LiDAR & YOLOv8 Camera Active
           </span>
         </div>
 
@@ -379,7 +379,7 @@ export default function CarTrackingView({ onBack, defects = [], onDefectUpdated 
             >
               <div className="space-y-3">
                 
-                {/* Photo Preview Container (With YOLOv26 Bounding Box badge) */}
+                {/* Photo Preview Container (With YOLO Bounding Box badge) */}
                 <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
                   <img
                     src={d.image_url || '/images/pothole_before.jpg'}
@@ -390,7 +390,7 @@ export default function CarTrackingView({ onBack, defects = [], onDefectUpdated 
                   {/* AI Detection Badge */}
                   <div className="absolute top-2.5 left-2.5 bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/40 text-[10px] font-mono text-cyan-300 font-bold flex items-center space-x-1.5 shadow-lg">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span>YOLOv26 Detection • {d.confidence_pct || 96.8}% Confidence</span>
+                    <span>YOLOv8 Detection • {d.confidence_pct || 96.8}% Confidence</span>
                   </div>
 
                   {/* Severity Badge */}
