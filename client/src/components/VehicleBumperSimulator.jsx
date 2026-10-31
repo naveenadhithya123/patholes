@@ -14,7 +14,7 @@ const HARDWARE_SENSOR_SCENARIOS = [
     depth_cm: 14,
     width_cm: 60,
     expected_action: 'DUPLICATE_SUPPRESSED',
-    description: 'Car drives over existing P1 Pothole #BBMP-RD-1001. Demonstrates automated duplicate suppression.'
+    description: 'Car drives over existing P1 Pothole #NF-RD-1001. Demonstrates automated duplicate suppression.'
   },
   {
     id: 'scen_bellandur_new',

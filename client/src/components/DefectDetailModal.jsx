@@ -188,7 +188,7 @@ export default function DefectDetailModal({ defect, onClose, onUpdateStatus, onG
                 className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-600 flex items-center space-x-1.5 transition"
               >
                 <Printer className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Generate Official BBMP Work Order</span>
+                <span>Generate Official Municipal Work Order</span>
               </button>
 
               <button

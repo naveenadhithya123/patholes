@@ -161,7 +161,7 @@ export default function HeadAdminDashboard({ govUser, onLogout, defects = [], ro
           <div>
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase tracking-wider">
-                BBMP Central Command HQ
+                Municipal Central Command HQ
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 5 Corporations • 50 Sub-Divisions
@@ -171,7 +171,7 @@ export default function HeadAdminDashboard({ govUser, onLogout, defects = [], ro
               Dr. B. K. Shivakumar
             </h1>
             <p className="text-xs sm:text-sm text-slate-400">
-              Chief Municipal Infrastructure Commissioner • Bruhat Bengaluru Mahanagara Palike
+              Chief Municipal Infrastructure Commissioner • Bengaluru City Corporations
             </p>
           </div>
         </div>

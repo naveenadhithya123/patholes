@@ -112,7 +112,7 @@ export default function PublicCivicTracker({ onBack, onSelectView }) {
             <span>Civic Road Issues & Verification Tracker</span>
           </h1>
           <p className="text-sm text-slate-400 mt-2 max-w-3xl leading-relaxed">
-            Live municipal issue stack: Track reported road defects and inspect verified repairs with authentic Before & After photos verified and authorized by the BBMP Chief Infrastructure Head.
+            Live municipal issue stack: Track reported road defects and inspect verified repairs with authentic Before & After photos verified and authorized by the Municipal Chief Infrastructure Head.
           </p>
         </div>
 
@@ -548,7 +548,7 @@ export default function PublicCivicTracker({ onBack, onSelectView }) {
                             <span>OFFICIAL HEAD ADMIN VERIFICATION SEAL</span>
                           </div>
                           <div className="text-slate-300">
-                            Approved by: <strong className="text-white">{defect.approved_by?.name || 'Dr. B. K. Shivakumar (BBMP Chief Infrastructure Officer)'}</strong>
+                            Approved by: <strong className="text-white">{defect.approved_by?.name || 'Dr. B. K. Shivakumar (Chief Infrastructure Commissioner)'}</strong>
                           </div>
                           <div className="text-slate-400 text-[11px]">
                             Remarks: "{defect.approved_by?.remarks || 'Dual photo evidence confirmed. Road surface leveled and cleared for commuter traffic.'}"
@@ -600,7 +600,7 @@ export default function PublicCivicTracker({ onBack, onSelectView }) {
                           <div className="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 text-emerald-300">
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                             <div>
-                              <div className="font-bold">Step 1: Forwarded to Head Admin (BBMP Central)</div>
+                              <div className="font-bold">Step 1: Forwarded to Head Admin (Central Command)</div>
                               <div className="text-[11px] text-slate-400">Captured by citizen camera & received at Municipal Command HQ.</div>
                             </div>
                           </div>

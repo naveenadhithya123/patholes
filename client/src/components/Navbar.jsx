@@ -24,7 +24,7 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
                   Namma<span className="text-blue-400">Fix</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                  BBMP Smart City
+                  Smart City Portal
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">

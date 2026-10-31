@@ -26,7 +26,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
   const [selectedRole, setSelectedRole] = useState('head_admin');
 
   // Head Admin credentials (pre-filled by default for instant ease!)
-  const [headEmail, setHeadEmail] = useState('head.admin@bbmp.gov.in');
+  const [headEmail, setHeadEmail] = useState('head.admin@nammafix.gov.in');
   const [headPassword, setHeadPassword] = useState('admin123');
 
   // 5 Corporations & 50 Sub-Divisions State
@@ -108,9 +108,9 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
         id: 'HEAD-ADMIN-01',
         name: 'Dr. B. K. Shivakumar',
         title: 'Chief Municipal Infrastructure Commissioner',
-        email: 'head.admin@bbmp.gov.in',
+        email: 'head.admin@nammafix.gov.in',
         role: 'HEAD_ADMIN',
-        agency: 'Bruhat Bengaluru Mahanagara Palike (Central Command HQ)',
+        agency: 'Bengaluru City Corporations (Central Command HQ)',
         jurisdiction: 'All 5 Corporations & 50 Sub-Divisions (198 Wards)',
         badge: 'CHIEF_COMMISSIONER'
       }, 'jwt-head-admin-token-' + Date.now());
@@ -152,7 +152,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
       <div className="text-center space-y-3 mb-8">
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
           <ShieldAlert className="w-4 h-4 text-blue-400" />
-          <span>Bruhat Bengaluru Mahanagara Palike • Command Portal</span>
+          <span>Bengaluru Municipal Corporations • Command Portal</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
           Municipal Authority Login
@@ -249,7 +249,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
                 <div>
                   <div className="text-xs font-bold text-blue-300">Official Demo Credentials (Pre-filled):</div>
                   <div className="text-xs text-slate-300 font-mono mt-0.5">
-                    User: <span className="text-white font-bold">head.admin@bbmp.gov.in</span> • Pass: <span className="text-white font-bold">admin123</span>
+                    User: <span className="text-white font-bold">head.admin@nammafix.gov.in</span> • Pass: <span className="text-white font-bold">admin123</span>
                   </div>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
                 <h4 className="font-bold text-white text-base">Dr. B. K. Shivakumar</h4>
                 <p className="text-xs text-blue-400 font-medium">Chief Municipal Infrastructure Commissioner</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  HQ: BBMP Central Command, Hudson Circle • Jurisdiction: All 5 Corporations & 50 Sub-Divisions
+                  HQ: Central Municipal Command, Hudson Circle • Jurisdiction: All 5 Corporations & 50 Sub-Divisions
                 </p>
               </div>
             </div>
@@ -280,7 +280,7 @@ export default function OfficerLoginPage({ onLogin, onCancel }) {
             {/* Form */}
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Official BBMP Email</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Official Municipal Email</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                   <input

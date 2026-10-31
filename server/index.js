@@ -72,9 +72,9 @@ const HEAD_ADMIN = {
   id: 'HEAD-ADMIN-01',
   name: 'Dr. B. K. Shivakumar',
   title: 'Chief Municipal Infrastructure Commissioner',
-  email: 'head.admin@bbmp.gov.in',
+  email: 'head.admin@nammafix.gov.in',
   role: 'HEAD_ADMIN',
-  agency: 'Bruhat Bengaluru Mahanagara Palike (Central Command HQ)',
+  agency: 'Bengaluru City Corporations (Central Command HQ)',
   jurisdiction: 'All 5 Corporations & 50 Sub-Divisions (198 Wards)',
   badge: 'CHIEF_COMMISSIONER'
 };
@@ -127,8 +127,11 @@ app.post('/api/auth/login', (req, res) => {
 
   // 1. Check for Top Municipal Head
   if (
+    cleanEmail === 'head.admin@nammafix.gov.in' ||
     cleanEmail === 'head.admin@bbmp.gov.in' ||
+    cleanEmail === 'admin@nammafix.gov.in' ||
     cleanEmail === 'admin@bbmp.gov.in' ||
+    cleanEmail === 'commissioner@nammafix.gov.in' ||
     cleanEmail === 'commissioner@bbmp.gov.in' ||
     role === 'HEAD_ADMIN'
   ) {
@@ -203,7 +206,7 @@ app.post('/api/auth/login', (req, res) => {
 
   return res.status(401).json({
     success: false,
-    message: 'Invalid credentials. Use head.admin@bbmp.gov.in / admin123 or select your Sub-Division / admin123.'
+    message: 'Invalid credentials. Use head.admin@nammafix.gov.in / admin123 or select your Sub-Division / admin123.'
   });
 });
 
@@ -449,7 +452,7 @@ app.post('/api/fleet/simulate-sweep', (req, res) => {
   const nextCodeNum = 1000 + defectsData.length + 1;
   const newDefect = {
     id: `DEF-2026-${nextCodeNum}`,
-    ticket_code: `BBMP-VEH-${nextCodeNum}`,
+    ticket_code: `NF-VEH-${nextCodeNum}`,
     type: 'pothole',
     category_label: 'Vehicle-Detected Severe Crater',
     title: `Pothole scanned by ${randomCar.name} @ ${randomCar.speed_kmh} km/h`,
@@ -658,7 +661,7 @@ app.post('/api/defects/report', async (req, res) => {
   });
 
   const nextCodeNum = 1000 + defectsData.length + 1;
-  const ticketPrefix = effectiveType === 'pothole' || effectiveType === 'road_crack' ? 'BBMP-RD' : 'BBMP-STR';
+  const ticketPrefix = effectiveType === 'pothole' || effectiveType === 'road_crack' ? 'NF-RD' : 'NF-STR';
   const ticket_code = `${ticketPrefix}-${nextCodeNum}`;
   const autoSubdiv = findClosestSubdivision(candidateLat, candidateLng);
 
@@ -778,7 +781,7 @@ app.post('/api/vehicle/telemetry', (req, res) => {
   const nextCodeNum = 1000 + defectsData.length + 1;
   const newDefect = {
     id: `DEF-2026-${nextCodeNum}`,
-    ticket_code: `BBMP-VEH-${nextCodeNum}`,
+    ticket_code: `NF-VEH-${nextCodeNum}`,
     type: defect_details.type || 'pothole',
     category_label: 'Vehicle-Detected Severe Crater',
     title: `Pothole detected by Patrol Car ${vehicle_id} @ ${speed_kmh} km/h`,
@@ -1058,7 +1061,7 @@ app.post('/api/subdivisions/:id/simulate-defect', (req, res) => {
 
   const simulatedDefect = {
     id: `DEF-2026-${nextCodeNum}`,
-    ticket_code: `BBMP-RD-${nextCodeNum}`,
+    ticket_code: `NF-RD-${nextCodeNum}`,
     type: 'pothole',
     category_label: 'Severe Road Pothole',
     title: `Pothole detected near ${subdiv.name}`,

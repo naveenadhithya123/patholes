@@ -1,7 +1,7 @@
 [
   {
     "id": "DEF-2026-1001",
-    "ticket_code": "BBMP-RD-1001",
+    "ticket_code": "NF-RD-1001",
     "type": "pothole",
     "category_label": "Severe Road Pothole",
     "title": "Deep Pothole on Silk Board Flyover Merge",
@@ -36,7 +36,7 @@
       "name": "HSR Layout Sub-Division",
       "corporation": "South",
       "engineer": "Er. K. Suresh Gowda",
-      "email": "subdiv.hsr@bbmp.gov.in"
+      "email": "subdiv.hsr@nammafix.gov.in"
     },
     "field_crew": "HSR Sub-Division Rapid Paving Gang #1",
     "verification_count": 8,
@@ -44,7 +44,7 @@
   },
   {
     "id": "DEF-2026-1002",
-    "ticket_code": "BBMP-RD-1002",
+    "ticket_code": "NF-RD-1002",
     "type": "pothole",
     "category_label": "Severe Road Pothole",
     "title": "Submerged Pothole Cluster near Bellandur Eco-Space",
@@ -79,7 +79,7 @@
       "name": "Mahadevapura Sub-Division",
       "corporation": "East",
       "engineer": "Er. Ananya Sharma",
-      "email": "subdiv.mahadevapura@bbmp.gov.in"
+      "email": "subdiv.mahadevapura@nammafix.gov.in"
     },
     "field_crew": "Mahadevapura Arterial Squad #1",
     "verification_count": 5,
@@ -87,7 +87,7 @@
   },
   {
     "id": "DEF-2026-1003",
-    "ticket_code": "BBMP-STR-1003",
+    "ticket_code": "NF-STR-1003",
     "type": "wall_crack",
     "category_label": "Infrastructure Wall Fracture",
     "title": "Diagonal Structural Crack on Underpass Retaining Wall",
@@ -121,14 +121,14 @@
       "name": "KR Puram Sub-Division",
       "corporation": "East",
       "engineer": "Er. Ramesh Gowda",
-      "email": "subdiv.krpuram@bbmp.gov.in"
+      "email": "subdiv.krpuram@nammafix.gov.in"
     },
     "verification_count": 12,
     "duplicates_prevented": 22
   },
   {
     "id": "DEF-2026-1004",
-    "ticket_code": "BBMP-RD-1004",
+    "ticket_code": "NF-RD-1004",
     "type": "road_crack",
     "category_label": "Severe Alligator Cracking",
     "title": "Extensive Fatigue Alligator Cracking on Whitefield Main Road",
@@ -162,14 +162,14 @@
       "name": "Whitefield Sub-Division",
       "corporation": "East",
       "engineer": "Er. Sandeep Joshi",
-      "email": "subdiv.whitefield@bbmp.gov.in"
+      "email": "subdiv.whitefield@nammafix.gov.in"
     },
     "verification_count": 3,
     "duplicates_prevented": 7
   },
   {
     "id": "DEF-2026-1005",
-    "ticket_code": "BBMP-STR-1005",
+    "ticket_code": "NF-STR-1005",
     "type": "bridge_crack",
     "category_label": "Bridge Deck Joint Spalling",
     "title": "Expansion Joint Separation on Hebbal Flyover Span 4",
@@ -203,14 +203,14 @@
       "name": "Hebbal Sub-Division",
       "corporation": "North",
       "engineer": "Er. Vikram Rao",
-      "email": "subdiv.hebbal@bbmp.gov.in"
+      "email": "subdiv.hebbal@nammafix.gov.in"
     },
     "verification_count": 9,
     "duplicates_prevented": 19
   },
   {
     "id": "DEF-2026-1006",
-    "ticket_code": "BBMP-RD-1006",
+    "ticket_code": "NF-RD-1006",
     "type": "pothole",
     "category_label": "Moderate Road Pothole",
     "title": "Pothole at Indiranagar 100ft & 12th Main Crossing",
@@ -245,7 +245,7 @@
       "name": "Indiranagar Sub-Division",
       "corporation": "East",
       "engineer": "Er. Deepa Nair",
-      "email": "subdiv.indiranagar@bbmp.gov.in"
+      "email": "subdiv.indiranagar@nammafix.gov.in"
     },
     "completion_details": {
       "after_image_url": "https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&w=800&q=80",
@@ -261,7 +261,7 @@
   },
   {
     "id": "DEF-2026-1007",
-    "ticket_code": "BBMP-RD-1007",
+    "ticket_code": "NF-RD-1007",
     "type": "road_crack",
     "category_label": "Longitudinal Pavement Crack",
     "title": "Longitudinal Settlement Crack near Koramangala Sony Signal",
@@ -295,14 +295,14 @@
       "name": "Koramangala Sub-Division",
       "corporation": "South",
       "engineer": "Er. Ajay Prasad",
-      "email": "subdiv.koramangala@bbmp.gov.in"
+      "email": "subdiv.koramangala@nammafix.gov.in"
     },
     "verification_count": 1,
     "duplicates_prevented": 3
   },
   {
     "id": "DEF-2026-1008",
-    "ticket_code": "BBMP-RD-1008",
+    "ticket_code": "NF-RD-1008",
     "type": "pothole",
     "category_label": "Severe Road Pothole",
     "title": "Severe Pavement Crater near Koramangala 80ft Road Junction",
@@ -337,7 +337,7 @@
       "name": "Koramangala Sub-Division",
       "corporation": "South",
       "engineer": "Er. Ajay Prasad",
-      "email": "subdiv.koramangala@bbmp.gov.in"
+      "email": "subdiv.koramangala@nammafix.gov.in"
     },
     "completion_details": {
       "after_image_url": "/images/pothole_after.jpg",
@@ -353,7 +353,7 @@
   },
   {
     "id": "DEF-2026-1009",
-    "ticket_code": "BBMP-RD-1009",
+    "ticket_code": "NF-RD-1009",
     "type": "pothole",
     "category_label": "Asphalt Edge Cavity",
     "title": "Road Surface Cavity near MG Road Metro Station",
@@ -388,7 +388,7 @@
       "name": "MG Road / CBD Sub-Division",
       "corporation": "Central",
       "engineer": "Er. Rajesh Patil",
-      "email": "subdiv.mgroad@bbmp.gov.in"
+      "email": "subdiv.mgroad@nammafix.gov.in"
     },
     "completion_details": {
       "after_image_url": "/images/pothole_after.jpg",
@@ -404,7 +404,7 @@
   },
   {
     "id": "DEF-2026-1010",
-    "ticket_code": "BBMP-RD-1010",
+    "ticket_code": "NF-RD-1010",
     "type": "pothole",
     "category_label": "Severe Road Pothole",
     "title": "Subsurface Pothole on Malleshwaram 8th Cross Road",
@@ -439,7 +439,7 @@
       "name": "Malleshwaram Sub-Division",
       "corporation": "West",
       "engineer": "Er. Raghavendra Rao",
-      "email": "subdiv.malleshwaram@bbmp.gov.in"
+      "email": "subdiv.malleshwaram@nammafix.gov.in"
     },
     "completion_details": {
       "after_image_url": "/images/pothole_after.jpg",

@@ -15,7 +15,7 @@ export default function WorkOrderPrintModal({ defect, onClose }) {
         {/* Modal Controls (Not printed) */}
         <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-200 print:hidden">
           <div className="text-xs text-slate-500 font-mono">
-            BBMP WORK ORDER PRINT PREVIEW
+            MUNICIPAL WORK ORDER PRINT PREVIEW
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -43,13 +43,13 @@ export default function WorkOrderPrintModal({ defect, onClose }) {
               Government of Karnataka • Urban Development Department
             </div>
             <h1 className="text-xl font-extrabold text-slate-900 mt-1 uppercase">
-              Bruhat Bengaluru Mahanagara Palike (BBMP)
+              Bengaluru Municipal Corporation
             </h1>
             <div className="text-xs font-semibold text-slate-700 mt-0.5">
               Road Infrastructure & Maintenance Wing • Smart City Command Center
             </div>
             <div className="text-[11px] font-mono text-slate-500 mt-1">
-              SDG 9 & SDG 11 Resilient Urban Infrastructure Monitoring Framework
+              Urban Road Defect Resolution & Paving Network
             </div>
           </div>
 
@@ -112,7 +112,7 @@ export default function WorkOrderPrintModal({ defect, onClose }) {
               <div className="text-slate-500">SUPERVISING WARD ENGINEER:</div>
               <div className="font-bold text-slate-900 mt-1">{defect.assigned_to?.engineer || 'Er. Rajesh Patil (Executive Engineer)'}</div>
               <div className="mt-8 border-t border-slate-400 pt-1 text-[11px] text-slate-600">
-                BBMP Executive Engineer Seal & Stamp
+                Municipal Executive Engineer Seal & Stamp
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@
     "name": "MG Road / CBD Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Rajesh Patil",
-    "email": "subdiv.mgroad@bbmp.gov.in",
+    "email": "subdiv.mgroad@nammafix.gov.in",
     "center": { "lat": 12.9749, "lng": 77.6085 },
     "radius_km": 3.0,
     "wards": [111, 110]
@@ -14,7 +14,7 @@
     "name": "Shanthinagar Sub-Division",
     "corporation": "Central",
     "engineer": "Er. P. Venkatesh",
-    "email": "subdiv.shanthinagar@bbmp.gov.in",
+    "email": "subdiv.shanthinagar@nammafix.gov.in",
     "center": { "lat": 12.9602, "lng": 77.5958 },
     "radius_km": 2.8,
     "wards": [112, 113]
@@ -24,7 +24,7 @@
     "name": "Shivajinagar Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Farooq Ahmed",
-    "email": "subdiv.shivajinagar@bbmp.gov.in",
+    "email": "subdiv.shivajinagar@nammafix.gov.in",
     "center": { "lat": 12.9856, "lng": 77.6057 },
     "radius_km": 3.2,
     "wards": [91, 92]
@@ -34,7 +34,7 @@
     "name": "Chickpet Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Mohan Kumar",
-    "email": "subdiv.chickpet@bbmp.gov.in",
+    "email": "subdiv.chickpet@nammafix.gov.in",
     "center": { "lat": 12.9698, "lng": 77.5784 },
     "radius_km": 2.5,
     "wards": [119, 120]
@@ -44,7 +44,7 @@
     "name": "Sampangiram Nagar Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Geetha Rao",
-    "email": "subdiv.sampangiram@bbmp.gov.in",
+    "email": "subdiv.sampangiram@nammafix.gov.in",
     "center": { "lat": 12.9682, "lng": 77.5901 },
     "radius_km": 2.6,
     "wards": [109, 114]
@@ -54,7 +54,7 @@
     "name": "Gandhi Nagar Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Srinivas Murthy",
-    "email": "subdiv.gandhinagar@bbmp.gov.in",
+    "email": "subdiv.gandhinagar@nammafix.gov.in",
     "center": { "lat": 12.9785, "lng": 77.5810 },
     "radius_km": 2.7,
     "wards": [94, 95]
@@ -64,7 +64,7 @@
     "name": "Vasanth Nagar Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Anand Swamy",
-    "email": "subdiv.vasanthnagar@bbmp.gov.in",
+    "email": "subdiv.vasanthnagar@nammafix.gov.in",
     "center": { "lat": 12.9912, "lng": 77.5925 },
     "radius_km": 2.9,
     "wards": [93, 77]
@@ -74,7 +74,7 @@
     "name": "Ulsoor Sub-Division",
     "corporation": "Central",
     "engineer": "Er. Manjula Devi",
-    "email": "subdiv.ulsoor@bbmp.gov.in",
+    "email": "subdiv.ulsoor@nammafix.gov.in",
     "center": { "lat": 12.9818, "lng": 77.6253 },
     "radius_km": 3.1,
     "wards": [90, 89]
@@ -84,7 +84,7 @@
     "name": "Indiranagar Sub-Division",
     "corporation": "East",
     "engineer": "Er. Deepa Nair",
-    "email": "subdiv.indiranagar@bbmp.gov.in",
+    "email": "subdiv.indiranagar@nammafix.gov.in",
     "center": { "lat": 12.9721, "lng": 77.6415 },
     "radius_km": 3.5,
     "wards": [80, 81]
@@ -94,7 +94,7 @@
     "name": "KR Puram Sub-Division",
     "corporation": "East",
     "engineer": "Er. Ramesh Gowda",
-    "email": "subdiv.krpuram@bbmp.gov.in",
+    "email": "subdiv.krpuram@nammafix.gov.in",
     "center": { "lat": 12.9995, "lng": 77.6948 },
     "radius_km": 4.5,
     "wards": [52, 53]
@@ -104,7 +104,7 @@
     "name": "Hoysala Nagar Sub-Division",
     "corporation": "East",
     "engineer": "Er. Vinay Kumar",
-    "email": "subdiv.hoysalanagar@bbmp.gov.in",
+    "email": "subdiv.hoysalanagar@nammafix.gov.in",
     "center": { "lat": 12.9754, "lng": 77.6521 },
     "radius_km": 3.2,
     "wards": [79, 82]
@@ -114,7 +114,7 @@
     "name": "CV Raman Nagar Sub-Division",
     "corporation": "East",
     "engineer": "Er. Priya Kulkarni",
-    "email": "subdiv.cvramannagar@bbmp.gov.in",
+    "email": "subdiv.cvramannagar@nammafix.gov.in",
     "center": { "lat": 12.9851, "lng": 77.6632 },
     "radius_km": 3.6,
     "wards": [57, 58]
@@ -124,7 +124,7 @@
     "name": "Marathahalli Sub-Division",
     "corporation": "East",
     "engineer": "Er. Naveen Chand",
-    "email": "subdiv.marathahalli@bbmp.gov.in",
+    "email": "subdiv.marathahalli@nammafix.gov.in",
     "center": { "lat": 12.9542, "lng": 77.7011 },
     "radius_km": 4.2,
     "wards": [85, 87]
@@ -134,7 +134,7 @@
     "name": "HAL Airport Sub-Division",
     "corporation": "East",
     "engineer": "Er. Sunita Hegde",
-    "email": "subdiv.hal@bbmp.gov.in",
+    "email": "subdiv.hal@nammafix.gov.in",
     "center": { "lat": 12.9601, "lng": 77.6534 },
     "radius_km": 3.8,
     "wards": [88, 112]
@@ -144,7 +144,7 @@
     "name": "Ramamurthy Nagar Sub-Division",
     "corporation": "East",
     "engineer": "Er. Prakash Babu",
-    "email": "subdiv.ramamurthynagar@bbmp.gov.in",
+    "email": "subdiv.ramamurthynagar@nammafix.gov.in",
     "center": { "lat": 13.0163, "lng": 77.6775 },
     "radius_km": 4.0,
     "wards": [26, 27]
@@ -154,7 +154,7 @@
     "name": "Mahadevapura Sub-Division",
     "corporation": "East",
     "engineer": "Er. Ananya Sharma",
-    "email": "subdiv.mahadevapura@bbmp.gov.in",
+    "email": "subdiv.mahadevapura@nammafix.gov.in",
     "center": { "lat": 12.9925, "lng": 77.7081 },
     "radius_km": 4.8,
     "wards": [83, 86]
@@ -164,7 +164,7 @@
     "name": "Varthur Sub-Division",
     "corporation": "East",
     "engineer": "Er. Harish Reddy",
-    "email": "subdiv.varthur@bbmp.gov.in",
+    "email": "subdiv.varthur@nammafix.gov.in",
     "center": { "lat": 12.9388, "lng": 77.7462 },
     "radius_km": 5.0,
     "wards": [149, 150]
@@ -174,7 +174,7 @@
     "name": "Whitefield Sub-Division",
     "corporation": "East",
     "engineer": "Er. Sandeep Joshi",
-    "email": "subdiv.whitefield@bbmp.gov.in",
+    "email": "subdiv.whitefield@nammafix.gov.in",
     "center": { "lat": 12.9832, "lng": 77.7441 },
     "radius_km": 4.6,
     "wards": [84, 85]
@@ -184,7 +184,7 @@
     "name": "Koramangala Sub-Division",
     "corporation": "South",
     "engineer": "Er. Ajay Prasad",
-    "email": "subdiv.koramangala@bbmp.gov.in",
+    "email": "subdiv.koramangala@nammafix.gov.in",
     "center": { "lat": 12.9344, "lng": 77.6225 },
     "radius_km": 3.4,
     "wards": [151, 147]
@@ -194,7 +194,7 @@
     "name": "HSR Layout Sub-Division",
     "corporation": "South",
     "engineer": "Er. K. Suresh Gowda",
-    "email": "subdiv.hsr@bbmp.gov.in",
+    "email": "subdiv.hsr@nammafix.gov.in",
     "center": { "lat": 12.9177, "lng": 77.6238 },
     "radius_km": 3.8,
     "wards": [174, 175]
@@ -204,7 +204,7 @@
     "name": "Silk Board & Madiwala Sub-Division",
     "corporation": "South",
     "engineer": "Er. Chandrashekar",
-    "email": "subdiv.silkboard@bbmp.gov.in",
+    "email": "subdiv.silkboard@nammafix.gov.in",
     "center": { "lat": 12.9189, "lng": 77.6180 },
     "radius_km": 3.0,
     "wards": [172, 173]
@@ -214,7 +214,7 @@
     "name": "Jayanagar Sub-Division",
     "corporation": "South",
     "engineer": "Er. Radhika Sharma",
-    "email": "subdiv.jayanagar@bbmp.gov.in",
+    "email": "subdiv.jayanagar@nammafix.gov.in",
     "center": { "lat": 12.9298, "lng": 77.5835 },
     "radius_km": 3.3,
     "wards": [153, 169]
@@ -224,7 +224,7 @@
     "name": "JP Nagar Sub-Division",
     "corporation": "South",
     "engineer": "Er. Lokesh Babu",
-    "email": "subdiv.jpnagar@bbmp.gov.in",
+    "email": "subdiv.jpnagar@nammafix.gov.in",
     "center": { "lat": 12.9063, "lng": 77.5857 },
     "radius_km": 3.6,
     "wards": [177, 178]
@@ -234,7 +234,7 @@
     "name": "BTM Layout Sub-Division",
     "corporation": "South",
     "engineer": "Er. Divya Bharathi",
-    "email": "subdiv.btmlayout@bbmp.gov.in",
+    "email": "subdiv.btmlayout@nammafix.gov.in",
     "center": { "lat": 12.9166, "lng": 77.6101 },
     "radius_km": 3.2,
     "wards": [176, 173]
@@ -244,7 +244,7 @@
     "name": "Bannerghatta Road Sub-Division",
     "corporation": "South",
     "engineer": "Er. Shivananda Patil",
-    "email": "subdiv.bannerghatta@bbmp.gov.in",
+    "email": "subdiv.bannerghatta@nammafix.gov.in",
     "center": { "lat": 12.8912, "lng": 77.5971 },
     "radius_km": 4.5,
     "wards": [193, 194]
@@ -254,7 +254,7 @@
     "name": "Basavanagudi Sub-Division",
     "corporation": "South",
     "engineer": "Er. Girish Kumar",
-    "email": "subdiv.basavanagudi@bbmp.gov.in",
+    "email": "subdiv.basavanagudi@nammafix.gov.in",
     "center": { "lat": 12.9419, "lng": 77.5752 },
     "radius_km": 3.1,
     "wards": [154, 155]
@@ -264,7 +264,7 @@
     "name": "Padmanabhanagar Sub-Division",
     "corporation": "South",
     "engineer": "Er. Kavitha Reddy",
-    "email": "subdiv.padmanabhanagar@bbmp.gov.in",
+    "email": "subdiv.padmanabhanagar@nammafix.gov.in",
     "center": { "lat": 12.9181, "lng": 77.5576 },
     "radius_km": 3.4,
     "wards": [181, 182]
@@ -274,7 +274,7 @@
     "name": "Banashankari Sub-Division",
     "corporation": "South",
     "engineer": "Er. Venkatesh Murthy",
-    "email": "subdiv.banashankari@bbmp.gov.in",
+    "email": "subdiv.banashankari@nammafix.gov.in",
     "center": { "lat": 12.9254, "lng": 77.5468 },
     "radius_km": 3.9,
     "wards": [180, 179]
@@ -284,7 +284,7 @@
     "name": "Bommanahalli Sub-Division",
     "corporation": "South",
     "engineer": "Er. Ravi Kiran",
-    "email": "subdiv.bommanahalli@bbmp.gov.in",
+    "email": "subdiv.bommanahalli@nammafix.gov.in",
     "center": { "lat": 12.9029, "lng": 77.6242 },
     "radius_km": 4.2,
     "wards": [175, 186]
@@ -294,7 +294,7 @@
     "name": "Electronic City Sub-Division",
     "corporation": "South",
     "engineer": "Er. Manjunath Swamy",
-    "email": "subdiv.ecity@bbmp.gov.in",
+    "email": "subdiv.ecity@nammafix.gov.in",
     "center": { "lat": 12.8452, "lng": 77.6602 },
     "radius_km": 5.5,
     "wards": [198, 197]
@@ -304,7 +304,7 @@
     "name": "Malleshwaram Sub-Division",
     "corporation": "West",
     "engineer": "Er. Sudheer Nayak",
-    "email": "subdiv.malleshwaram@bbmp.gov.in",
+    "email": "subdiv.malleshwaram@nammafix.gov.in",
     "center": { "lat": 13.0031, "lng": 77.5694 },
     "radius_km": 3.2,
     "wards": [65, 66]
@@ -314,7 +314,7 @@
     "name": "Rajajinagar Sub-Division",
     "corporation": "West",
     "engineer": "Er. Rohini Prasad",
-    "email": "subdiv.rajajinagar@bbmp.gov.in",
+    "email": "subdiv.rajajinagar@nammafix.gov.in",
     "center": { "lat": 12.9915, "lng": 77.5528 },
     "radius_km": 3.4,
     "wards": [99, 100]
@@ -324,7 +324,7 @@
     "name": "Vijayanagar Sub-Division",
     "corporation": "West",
     "engineer": "Er. Shashidhar Hegde",
-    "email": "subdiv.vijayanagar@bbmp.gov.in",
+    "email": "subdiv.vijayanagar@nammafix.gov.in",
     "center": { "lat": 12.9638, "lng": 77.5385 },
     "radius_km": 3.6,
     "wards": [123, 124]
@@ -334,7 +334,7 @@
     "name": "Basaveshwaranagar Sub-Division",
     "corporation": "West",
     "engineer": "Er. Rekha Shenoy",
-    "email": "subdiv.basaveshwaranagar@bbmp.gov.in",
+    "email": "subdiv.basaveshwaranagar@nammafix.gov.in",
     "center": { "lat": 12.9878, "lng": 77.5398 },
     "radius_km": 3.3,
     "wards": [101, 102]
@@ -344,7 +344,7 @@
     "name": "Yeshwanthpur Sub-Division",
     "corporation": "West",
     "engineer": "Er. Vijay Bhaskar",
-    "email": "subdiv.yeshwanthpur@bbmp.gov.in",
+    "email": "subdiv.yeshwanthpur@nammafix.gov.in",
     "center": { "lat": 13.0238, "lng": 77.5529 },
     "radius_km": 4.0,
     "wards": [37, 38]
@@ -354,7 +354,7 @@
     "name": "Mahalakshmi Layout Sub-Division",
     "corporation": "West",
     "engineer": "Er. Shobha Rani",
-    "email": "subdiv.mahalakshmi@bbmp.gov.in",
+    "email": "subdiv.mahalakshmi@nammafix.gov.in",
     "center": { "lat": 13.0152, "lng": 77.5412 },
     "radius_km": 3.5,
     "wards": [68, 69]
@@ -364,7 +364,7 @@
     "name": "Binnypet Sub-Division",
     "corporation": "West",
     "engineer": "Er. Kiran Kumar",
-    "email": "subdiv.binnypet@bbmp.gov.in",
+    "email": "subdiv.binnypet@nammafix.gov.in",
     "center": { "lat": 12.9664, "lng": 77.5582 },
     "radius_km": 2.8,
     "wards": [121, 122]
@@ -374,7 +374,7 @@
     "name": "Chandra Layout Sub-Division",
     "corporation": "West",
     "engineer": "Er. Deepak Gowda",
-    "email": "subdiv.chandralayout@bbmp.gov.in",
+    "email": "subdiv.chandralayout@nammafix.gov.in",
     "center": { "lat": 12.9572, "lng": 77.5245 },
     "radius_km": 3.7,
     "wards": [129, 130]
@@ -384,7 +384,7 @@
     "name": "Kengeri Sub-Division",
     "corporation": "West",
     "engineer": "Er. Shivakumar Patil",
-    "email": "subdiv.kengeri@bbmp.gov.in",
+    "email": "subdiv.kengeri@nammafix.gov.in",
     "center": { "lat": 12.9081, "lng": 77.4852 },
     "radius_km": 5.2,
     "wards": [159, 160]
@@ -394,7 +394,7 @@
     "name": "Govindraj Nagar Sub-Division",
     "corporation": "West",
     "engineer": "Er. Aruna Kumari",
-    "email": "subdiv.govindrajnagar@bbmp.gov.in",
+    "email": "subdiv.govindrajnagar@nammafix.gov.in",
     "center": { "lat": 12.9751, "lng": 77.5312 },
     "radius_km": 3.2,
     "wards": [104, 105]
@@ -404,7 +404,7 @@
     "name": "Hebbal Sub-Division",
     "corporation": "North",
     "engineer": "Er. Vikram Rao",
-    "email": "subdiv.hebbal@bbmp.gov.in",
+    "email": "subdiv.hebbal@nammafix.gov.in",
     "center": { "lat": 13.0362, "lng": 77.5968 },
     "radius_km": 4.1,
     "wards": [7, 21]
@@ -414,7 +414,7 @@
     "name": "Yelahanka Sub-Division",
     "corporation": "North",
     "engineer": "Er. Satish Chandra",
-    "email": "subdiv.yelahanka@bbmp.gov.in",
+    "email": "subdiv.yelahanka@nammafix.gov.in",
     "center": { "lat": 13.1007, "lng": 77.5963 },
     "radius_km": 5.4,
     "wards": [1, 2]
@@ -424,7 +424,7 @@
     "name": "Byatarayanapura Sub-Division",
     "corporation": "North",
     "engineer": "Er. Manjunath Reddy",
-    "email": "subdiv.byatarayanapura@bbmp.gov.in",
+    "email": "subdiv.byatarayanapura@nammafix.gov.in",
     "center": { "lat": 13.0612, "lng": 77.5912 },
     "radius_km": 4.3,
     "wards": [6, 8]
@@ -434,7 +434,7 @@
     "name": "Thanisandra Sub-Division",
     "corporation": "North",
     "engineer": "Er. Swathi Prabhu",
-    "email": "subdiv.thanisandra@bbmp.gov.in",
+    "email": "subdiv.thanisandra@nammafix.gov.in",
     "center": { "lat": 13.0543, "lng": 77.6315 },
     "radius_km": 4.6,
     "wards": [9, 10]
@@ -444,7 +444,7 @@
     "name": "Vidyaranyapura Sub-Division",
     "corporation": "North",
     "engineer": "Er. Hariprasad Rao",
-    "email": "subdiv.vidyaranyapura@bbmp.gov.in",
+    "email": "subdiv.vidyaranyapura@nammafix.gov.in",
     "center": { "lat": 13.0789, "lng": 77.5612 },
     "radius_km": 4.5,
     "wards": [11, 12]
@@ -454,7 +454,7 @@
     "name": "Kodigehalli Sub-Division",
     "corporation": "North",
     "engineer": "Er. Suma Narayan",
-    "email": "subdiv.kodigehalli@bbmp.gov.in",
+    "email": "subdiv.kodigehalli@nammafix.gov.in",
     "center": { "lat": 13.0512, "lng": 77.5756 },
     "radius_km": 3.8,
     "wards": [13, 14]
@@ -464,7 +464,7 @@
     "name": "Sahakar Nagar Sub-Division",
     "corporation": "North",
     "engineer": "Er. Prashanth Kumar",
-    "email": "subdiv.sahakarnagar@bbmp.gov.in",
+    "email": "subdiv.sahakarnagar@nammafix.gov.in",
     "center": { "lat": 13.0628, "lng": 77.5841 },
     "radius_km": 3.6,
     "wards": [15, 16]
@@ -474,7 +474,7 @@
     "name": "Peenya Industrial Sub-Division",
     "corporation": "North",
     "engineer": "Er. Raghuveer Singh",
-    "email": "subdiv.peenya@bbmp.gov.in",
+    "email": "subdiv.peenya@nammafix.gov.in",
     "center": { "lat": 13.0312, "lng": 77.5254 },
     "radius_km": 4.8,
     "wards": [41, 42]
@@ -484,7 +484,7 @@
     "name": "Dasarahalli Sub-Division",
     "corporation": "North",
     "engineer": "Er. Leelavathi",
-    "email": "subdiv.dasarahalli@bbmp.gov.in",
+    "email": "subdiv.dasarahalli@nammafix.gov.in",
     "center": { "lat": 13.0456, "lng": 77.5132 },
     "radius_km": 4.4,
     "wards": [39, 40]
@@ -494,7 +494,7 @@
     "name": "Jalahalli Sub-Division",
     "corporation": "North",
     "engineer": "Er. Anand Kulkarni",
-    "email": "subdiv.jalahalli@bbmp.gov.in",
+    "email": "subdiv.jalahalli@nammafix.gov.in",
     "center": { "lat": 13.0519, "lng": 77.5451 },
     "radius_km": 4.0,
     "wards": [17, 18]
