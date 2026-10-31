@@ -9,6 +9,7 @@ require('dotenv').config();
 const { findDuplicateDefect, findClosestRoad, calculateHaversineDistance } = require('./services/spatial');
 const { calculateAIPriority } = require('./services/prioritization');
 const { analyzeImageWithAI } = require('./services/vision_ai');
+const { buildComparativeRoutes } = require('./services/traffic_routing');
 const supabaseService = require('./services/supabase');
 
 const app = express();
@@ -421,20 +422,32 @@ app.get('/api/navigation/route', async (req, res) => {
       altDurationMin = calculateCarDrivingMinutes(altDistanceKm, alt.duration);
     }
 
+    // Compute Multi-Tier Google Maps Live Traffic Analysis & Multi-Route Comparison
+    const comparativeAnalysis = buildComparativeRoutes(
+      primaryCoords,
+      altCoords,
+      defectsData,
+      primaryDurationMin,
+      altDurationMin
+    );
+
     return res.json({
       success: true,
       mode: 'CAR_DRIVING',
       hasAlternativeRoad: !!altCoords,
+      traffic_analysis: comparativeAnalysis,
       primary: {
         path: primaryCoords,
         distanceKm: primaryDistanceKm,
-        durationMin: primaryDurationMin
+        durationMin: primaryDurationMin,
+        traffic: comparativeAnalysis ? comparativeAnalysis.optimal : null
       },
       alternative: altCoords
         ? {
             path: altCoords,
             distanceKm: altDistanceKm,
-            durationMin: altDurationMin
+            durationMin: altDurationMin,
+            traffic: comparativeAnalysis ? comparativeAnalysis.safe_bypass : null
           }
         : null
     });

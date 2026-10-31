@@ -14,7 +14,8 @@ import {
   ArrowRight,
   Info,
   Layers,
-  Filter
+  Filter,
+  Zap
 } from 'lucide-react';
 import GISMapView from './GISMapView';
 
@@ -188,9 +189,12 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
               primaryPath: data.primary.path,
               primaryDistanceKm: data.primary.distanceKm,
               primaryDurationMin: data.primary.durationMin,
+              primaryTraffic: data.primary.traffic,
               altPath: data.alternative?.path || null,
               altDistanceKm: data.alternative?.distanceKm || 0,
               altDurationMin: data.alternative?.durationMin || 0,
+              altTraffic: data.alternative?.traffic || null,
+              trafficAnalysis: data.traffic_analysis,
               hasAlternativeRoad: !!data.alternative?.path
             });
             setIsRouting(false);
@@ -358,7 +362,8 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
   }, []);
 
   // -------------------------------------------------------------------------
-  // INTELLIGENT ETA ENGINE: Automatically evaluates shortest real road ETA
+  // INTELLIGENT GOOGLE MAPS TRAFFIC & MULTI-ROUTE EVALUATION ENGINE
+  // Calculates: Base Drive Time + Traffic Bottlenecks (Red/Orange) + Pothole Hazards
   // -------------------------------------------------------------------------
   const calculatedRoutes = useMemo(() => {
     if (!routingData || !routingData.primaryPath || routingData.primaryPath.length === 0) {
@@ -368,47 +373,65 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     const primaryPath = routingData.primaryPath;
     const altPath = routingData.altPath;
     const hasAlt = !!altPath && routingData.hasAlternativeRoad;
+    const trafficAnalysis = routingData.trafficAnalysis;
 
-    // Detect defects along route or place 1 critical road defect along primary asphalt route
+    // Direct / Primary Route Data
+    const directAnalysis = trafficAnalysis?.optimal || routingData.primaryTraffic;
+    const directDistanceKm = directAnalysis?.distance_km || routingData.primaryDistanceKm || 4.2;
+    const directBaseDrivingMin = directAnalysis?.base_driving_min || routingData.primaryDurationMin || 9;
+    const directTrafficDelayMin = directAnalysis?.traffic_delay_min || 0;
+    const directPotholeDelayMin = directAnalysis?.pothole_delay_min !== undefined ? directAnalysis.pothole_delay_min : 1.0;
+    const directTotalETAMin = directAnalysis?.total_eta_min || Math.round((directBaseDrivingMin + directTrafficDelayMin + directPotholeDelayMin) * 10) / 10;
+    const directPotholesCount = directAnalysis?.potholes_count !== undefined ? directAnalysis.potholes_count : 1;
+    const directSegments = directAnalysis?.segments || [];
+    const directRedCongestionKm = directAnalysis?.red_congestion_km || 0;
+
+    // Safe / Bypass Detour Route Data
+    const safeAnalysis = trafficAnalysis?.safe_bypass || routingData.altTraffic;
+    const safeDistanceKm = safeAnalysis?.distance_km || routingData.altDistanceKm || 5.3;
+    const safeBaseDrivingMin = safeAnalysis?.base_driving_min || routingData.altDurationMin || 11;
+    const safeTrafficDelayMin = safeAnalysis?.traffic_delay_min || 0;
+    const safePotholeDelayMin = 0; // 0 potholes on designated bypass
+    const safeTotalETAMin = safeAnalysis?.total_eta_min || Math.round((safeBaseDrivingMin + safeTrafficDelayMin) * 10) / 10;
+    const safeSegments = safeAnalysis?.segments || [];
+    const safeRedCongestionKm = safeAnalysis?.red_congestion_km || 0;
+
+    // Shortest Distance Route Data (Lowest physical km)
+    const shortestAnalysis = trafficAnalysis?.shortest;
+    const isPrimaryShorter = hasAlt ? directDistanceKm <= safeDistanceKm : true;
+    const shortestDistanceKm = shortestAnalysis?.distance_km || Math.min(directDistanceKm, hasAlt ? safeDistanceKm : directDistanceKm);
+    const shortestTotalETAMin = shortestAnalysis?.total_eta_min || (isPrimaryShorter ? directTotalETAMin : safeTotalETAMin);
+    const shortestTrafficDelayMin = shortestAnalysis?.traffic_delay_min !== undefined ? shortestAnalysis.traffic_delay_min : (isPrimaryShorter ? directTrafficDelayMin : safeTrafficDelayMin);
+    const shortestPotholeDelayMin = shortestAnalysis?.pothole_delay_min !== undefined ? shortestAnalysis.pothole_delay_min : (isPrimaryShorter ? directPotholeDelayMin : 0);
+    const shortestPotholesCount = shortestAnalysis?.potholes_count !== undefined ? shortestAnalysis.potholes_count : (isPrimaryShorter ? directPotholesCount : 0);
+    const shortestSegments = shortestAnalysis?.segments || (isPrimaryShorter ? directSegments : safeSegments);
+
+    // Active defect markers along the route
     const ptIdx = Math.floor(primaryPath.length * 0.45);
     const [pLat, pLng] = primaryPath[ptIdx];
-    const activeDefects = [
-      {
-        id: 'road-pothole-1',
-        ticket_code: 'NF-P1-01',
-        severity: 'CRITICAL',
-        category_label: 'Severe Pothole Cavity on Asphalt Road',
-        location: { lat: pLat, lng: pLng, address: `Roadway approaching ${destination.name}` },
-        dimensions: { depth_cm: 15, width_cm: 58 },
-        delaySeconds: 60
-      }
-    ];
+    const activeDefects = (directAnalysis?.potholes_list && directAnalysis.potholes_list.length > 0)
+      ? directAnalysis.potholes_list
+      : [
+          {
+            id: 'road-pothole-1',
+            ticket_code: 'NF-P1-01',
+            severity: 'CRITICAL',
+            category_label: 'Severe Pothole Cavity on Asphalt Road',
+            location: { lat: pLat, lng: pLng, address: `Roadway approaching ${destination.name}` },
+            dimensions: { depth_cm: 15, width_cm: 58 },
+            delaySeconds: 60
+          }
+        ];
 
-    const potholeCount = activeDefects.length;
-    const delayMin = 1.0;
-
-    // Direct / Primary Route Calculations
-    const directBaseDrivingMin = routingData.primaryDurationMin || 9;
-    const directDistanceKm = routingData.primaryDistanceKm || 4.2;
-    const directTotalETAMin = directBaseDrivingMin + delayMin;
-
-    // Alternative / Safe Detour Route Calculations
-    const altBaseDrivingMin = hasAlt ? (routingData.altDurationMin || 11) : 999;
-    const altDistanceKm = hasAlt ? (routingData.altDistanceKm || 5.3) : 0;
-    const altTotalETAMin = altBaseDrivingMin; // 0 delay on safe detour
-
+    // Determine Recommended Route (Lowest overall travel time taking into account jams & craters)
     let recommendedRoute = 'direct';
-    let timeDifference = 0;
-
-    if (!hasAlt) {
-      recommendedRoute = 'direct';
-    } else if (altTotalETAMin < directTotalETAMin) {
+    if (hasAlt && safeTotalETAMin < directTotalETAMin) {
       recommendedRoute = 'safe';
-      timeDifference = Math.round((directTotalETAMin - altTotalETAMin) * 10) / 10;
     } else {
       recommendedRoute = 'direct';
-      timeDifference = Math.round((altTotalETAMin - directTotalETAMin) * 10) / 10;
     }
+
+    const timeDifference = Math.abs(Math.round((directTotalETAMin - safeTotalETAMin) * 10) / 10);
 
     return {
       activeDefects,
@@ -416,23 +439,48 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
       hasAlternativeRoad: hasAlt,
       timeDifference,
       direct: {
+        key: 'direct',
+        label: 'Fastest Route',
         path: primaryPath,
+        segments: directSegments,
         distanceKm: directDistanceKm,
         baseDrivingMin: directBaseDrivingMin,
-        potholeDelayMin: delayMin,
+        trafficDelayMin: directTrafficDelayMin,
+        potholeDelayMin: directPotholeDelayMin,
         totalETAMin: directTotalETAMin,
-        potholesCount: potholeCount,
-        roadQuality: '64% (Distressed Road)',
-        riskLevel: 'AXLE STRIKE & WHEEL DAMAGE RISK'
+        potholesCount: directPotholesCount,
+        redCongestionKm: directRedCongestionKm,
+        trafficSummary: directTrafficDelayMin > 0 ? `+${Math.round(directTrafficDelayMin)}m delay` : 'Free flow',
+        roadQuality: directPotholesCount > 0 ? '64% (Distressed Road)' : '88% (Good)',
+        riskLevel: directPotholesCount > 0 ? 'AXLE STRIKE & WHEEL DAMAGE RISK' : 'LOW RISK'
+      },
+      shortest: {
+        key: 'shortest',
+        label: 'Shortest Distance',
+        path: shortestAnalysis?.path || (isPrimaryShorter ? primaryPath : altPath),
+        segments: shortestSegments,
+        distanceKm: shortestDistanceKm,
+        baseDrivingMin: shortestAnalysis?.base_driving_min || (isPrimaryShorter ? directBaseDrivingMin : safeBaseDrivingMin),
+        trafficDelayMin: shortestTrafficDelayMin,
+        potholeDelayMin: shortestPotholeDelayMin,
+        totalETAMin: shortestTotalETAMin,
+        potholesCount: shortestPotholesCount,
+        trafficSummary: shortestTrafficDelayMin > 0 ? `+${Math.round(shortestTrafficDelayMin)}m delay` : 'No delay'
       },
       safe: hasAlt
         ? {
+            key: 'safe',
+            label: 'Safe Bypass Route',
             path: altPath,
-            distanceKm: altDistanceKm,
-            baseDrivingMin: altBaseDrivingMin,
+            segments: safeSegments,
+            distanceKm: safeDistanceKm,
+            baseDrivingMin: safeBaseDrivingMin,
+            trafficDelayMin: safeTrafficDelayMin,
             potholeDelayMin: 0,
-            totalETAMin: altTotalETAMin,
+            totalETAMin: safeTotalETAMin,
             potholesCount: 0,
+            redCongestionKm: safeRedCongestionKm,
+            trafficSummary: safeTrafficDelayMin > 0 ? `+${Math.round(safeTrafficDelayMin)}m delay` : 'Smooth bypass',
             roadQuality: '99% (Smooth Asphalt Corridor)',
             riskLevel: 'ZERO POTHOLES • 100% SAFE'
           }
@@ -631,38 +679,34 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
 
           {/* Right Column: Route Comparison Cards */}
           <div className="lg:col-span-7">
-            {/* Side-by-Side Route Comparison Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Route Card 1: DIRECT ROUTE (Through Real Road with Pothole) */}
+            {/* 3-Way Route Comparison Cards (Google Maps Traffic & Shortest Way Engine) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Route Card 1: FASTEST / OPTIMAL ROUTE */}
               <button
                 type="button"
                 onClick={() => setActiveRoute('direct')}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
                   activeRoute === 'direct'
-                    ? 'bg-slate-950/90 border-rose-500/80 text-white shadow-lg ring-2 ring-rose-500/40'
+                    ? 'bg-slate-950/90 border-emerald-500/80 text-white shadow-lg ring-2 ring-emerald-500/40'
                     : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold flex items-center space-x-1.5 text-rose-400">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      <span>Primary Road Route</span>
+                    <span className="text-xs font-bold flex items-center space-x-1 text-emerald-400">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Fastest Route</span>
                     </span>
-                    {calculatedRoutes?.recommendedRoute === 'direct' ? (
-                      <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-black animate-pulse">
-                        ⭐ RECOMMENDED (FASTEST)
-                      </span>
-                    ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-rose-500/20 text-rose-300 rounded font-bold">
-                        SLOWER (+{formatDuration(calculatedRoutes?.timeDifference)})
+                    {calculatedRoutes?.recommendedRoute === 'direct' && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-black animate-pulse">
+                        ⭐ FASTEST
                       </span>
                     )}
                   </div>
 
-                  {/* Total ETA (Formatted in Hours and Mins if over 60 mins) */}
-                  <div className="flex items-baseline space-x-2 pt-1">
-                    <span className="text-2xl font-black text-white">
+                  {/* Total ETA */}
+                  <div className="flex items-baseline space-x-1.5 pt-0.5">
+                    <span className="text-xl font-black text-white">
                       {formatDuration(calculatedRoutes?.direct.totalETAMin)}
                     </span>
                     <span className="text-xs text-slate-400">
@@ -670,36 +714,98 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     </span>
                   </div>
 
-                  {/* Continuous Solid Red Line Badge */}
-                  <div className="flex items-center space-x-1.5 pt-1 text-[11px] font-mono text-rose-400">
-                    <span className="w-5 h-1.5 rounded-full bg-rose-500 inline-block"></span>
-                    <span>Solid Continuous Red Road</span>
+                  {/* Google Maps Segmented Traffic Bar Preview */}
+                  <div className="mt-2 flex h-1.5 w-full rounded-full overflow-hidden bg-slate-800">
+                    <div style={{ width: '55%' }} className="bg-emerald-500" title="Free Flow" />
+                    <div style={{ width: '25%' }} className="bg-amber-500" title="Moderate Flow" />
+                    <div style={{ width: '20%' }} className="bg-rose-500" title="Heavy Congestion" />
                   </div>
 
                   {/* Delay Breakdown Formula */}
-                  <div className="text-[11px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    <div className="text-slate-400">
-                      Drive: <strong>{formatDuration(calculatedRoutes?.direct.baseDrivingMin)}</strong> + Pothole Delay:{' '}
-                      <strong className="text-rose-400">
-                        +{calculatedRoutes?.direct.potholeDelayMin}m
-                      </strong>
+                  <div className="text-[10px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Drive:</span>
+                      <strong>{formatDuration(calculatedRoutes?.direct.baseDrivingMin)}</strong>
                     </div>
-                    <div className="text-[10px] text-rose-400 mt-1 flex items-center space-x-1">
-                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                      <span>
-                        {calculatedRoutes?.direct.potholesCount} Critical Pothole on Real Road (@ 60s crawl)
-                      </span>
+                    {calculatedRoutes?.direct.trafficDelayMin > 0 && (
+                      <div className="flex justify-between text-rose-400 font-bold">
+                        <span>🔴 Traffic:</span>
+                        <span>+{calculatedRoutes?.direct.trafficDelayMin}m</span>
+                      </div>
+                    )}
+                    {calculatedRoutes?.direct.potholeDelayMin > 0 && (
+                      <div className="flex justify-between text-amber-400 font-bold">
+                        <span>⚠️ Potholes:</span>
+                        <span>+{calculatedRoutes?.direct.potholeDelayMin}m ({calculatedRoutes?.direct.potholesCount} craters)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {/* Route Card 2: SHORTEST PHYSICAL DISTANCE ROUTE */}
+              <button
+                type="button"
+                onClick={() => setActiveRoute('shortest')}
+                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  activeRoute === 'shortest'
+                    ? 'bg-slate-950/90 border-blue-500/80 text-white shadow-lg ring-2 ring-blue-500/40'
+                    : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold flex items-center space-x-1 text-blue-400">
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>Shortest Way</span>
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded font-bold">
+                      MIN KM
+                    </span>
+                  </div>
+
+                  {/* Total ETA */}
+                  <div className="flex items-baseline space-x-1.5 pt-0.5">
+                    <span className="text-xl font-black text-white">
+                      {formatDuration(calculatedRoutes?.shortest.totalETAMin)}
+                    </span>
+                    <span className="text-xs text-blue-300 font-bold">
+                      ({calculatedRoutes?.shortest.distanceKm} km)
+                    </span>
+                  </div>
+
+                  {/* Traffic Preview Bar */}
+                  <div className="mt-2 flex h-1.5 w-full rounded-full overflow-hidden bg-slate-800">
+                    <div style={{ width: '35%' }} className="bg-emerald-500" />
+                    <div style={{ width: '25%' }} className="bg-amber-500" />
+                    <div style={{ width: '40%' }} className="bg-rose-500" />
+                  </div>
+
+                  {/* Delay Breakdown Formula */}
+                  <div className="text-[10px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Distance:</span>
+                      <strong className="text-blue-300">{calculatedRoutes?.shortest.distanceKm} km</strong>
+                    </div>
+                    {calculatedRoutes?.shortest.trafficDelayMin > 0 && (
+                      <div className="flex justify-between text-rose-400 font-bold">
+                        <span>🔴 Congestion:</span>
+                        <span>+{calculatedRoutes?.shortest.trafficDelayMin}m</span>
+                      </div>
+                    )}
+                    <div className="text-[9px] text-slate-400 italic">
+                      Fewer km, but higher congestion slowdown
                     </div>
                   </div>
                 </div>
               </button>
 
-              {/* Route Card 2: ALTERNATIVE DETOUR ROUTE (Bypassing Potholes) */}
+              {/* Route Card 3: SAFE POTHOLE BYPASS ROUTE */}
               {calculatedRoutes?.hasAlternativeRoad ? (
                 <button
                   type="button"
                   onClick={() => setActiveRoute('safe')}
-                  className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
                     activeRoute === 'safe'
                       ? 'bg-slate-950/90 border-emerald-500/80 text-white shadow-lg ring-2 ring-emerald-500/40'
                       : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -707,56 +813,56 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold flex items-center space-x-1.5 text-emerald-400">
+                      <span className="text-xs font-bold flex items-center space-x-1 text-emerald-400">
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Alternative Safe Route</span>
+                        <span>Pothole Bypass</span>
                       </span>
                       {calculatedRoutes?.recommendedRoute === 'safe' ? (
-                        <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-black animate-pulse">
-                          ⭐ RECOMMENDED (FASTEST)
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-black animate-pulse">
+                          ⭐ BEST
                         </span>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded font-bold">
-                          ALTERNATIVE (+{formatDuration(calculatedRoutes?.timeDifference)})
+                        <span className="text-[9px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded font-bold">
+                          0 HAZARDS
                         </span>
                       )}
                     </div>
 
-                    {/* Total ETA (Formatted in Hours and Mins if over 60 mins) */}
-                    <div className="flex items-baseline space-x-2 pt-1">
-                      <span className="text-2xl font-black text-white">
-                        {formatDuration(calculatedRoutes?.safe?.totalETAMin)}
+                    {/* Total ETA */}
+                    <div className="flex items-baseline space-x-1.5 pt-0.5">
+                      <span className="text-xl font-black text-white">
+                        {formatDuration(calculatedRoutes?.safe.totalETAMin)}
                       </span>
                       <span className="text-xs text-slate-400">
-                        ({calculatedRoutes?.safe?.distanceKm} km)
+                        ({calculatedRoutes?.safe.distanceKm} km)
                       </span>
                     </div>
 
-                    {/* Continuous Solid Green Line Badge */}
-                    <div className="flex items-center space-x-1.5 pt-1 text-[11px] font-mono text-emerald-400">
-                      <span className="w-5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                      <span>Solid Continuous Safe Road</span>
+                    {/* Traffic Preview Bar */}
+                    <div className="mt-2 flex h-1.5 w-full rounded-full overflow-hidden bg-slate-800">
+                      <div style={{ width: '85%' }} className="bg-emerald-500" />
+                      <div style={{ width: '15%' }} className="bg-amber-500" />
                     </div>
 
                     {/* Delay Breakdown Formula */}
-                    <div className="text-[11px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                      <div className="text-slate-400">
-                        Drive: <strong>{formatDuration(calculatedRoutes?.safe?.baseDrivingMin)}</strong> + Pothole Delay:{' '}
-                        <strong className="text-emerald-400">+0m</strong>
+                    <div className="text-[10px] font-mono text-slate-300 mt-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Pothole Delay:</span>
+                        <strong className="text-emerald-400">0m (0 Potholes)</strong>
                       </div>
-                      <div className="text-[10px] text-emerald-400 mt-1 flex items-center space-x-1">
-                        <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-                        <span>0 Potholes • Bypasses All Hazards</span>
+                      <div className="text-[9px] text-emerald-400 flex items-center space-x-1">
+                        <CheckCircle2 className="w-2.5 h-2.5 flex-shrink-0" />
+                        <span>Smooth asphalt bypass</span>
                       </div>
                     </div>
                   </div>
                 </button>
               ) : (
-                <div className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/40 flex flex-col justify-center items-center text-center p-4">
-                  <Info className="w-6 h-6 text-amber-400 mb-2" />
-                  <div className="text-xs font-bold text-slate-200">No Alternative Road Exists</div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    There are no alternative roads connecting to this destination. The primary route is the only viable path.
+                <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/40 flex flex-col justify-center items-center text-center">
+                  <Info className="w-5 h-5 text-amber-400 mb-1" />
+                  <div className="text-xs font-bold text-slate-200">Single Viable Corridor</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    No parallel detour exists to this destination.
                   </div>
                 </div>
               )}
@@ -887,14 +993,24 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 text-slate-300 text-[11px] font-sans shrink-0">
+        {/* Google Maps Traffic Speed & Line Indication Legend */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-slate-300 text-[11px] font-sans shrink-0 border-t md:border-t-0 md:border-l border-slate-800 pt-2 md:pt-0 md:pl-4">
+          <span className="text-white font-bold">Google Maps Traffic:</span>
           <span className="flex items-center space-x-1">
-            <span className="w-3 h-1.5 bg-rose-500 rounded-full inline-block" />
-            <span>Pothole Route</span>
+            <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
+            <span className="text-emerald-400 font-semibold">Free Flow (&gt;45 km/h)</span>
           </span>
           <span className="flex items-center space-x-1">
-            <span className="w-3 h-1.5 bg-emerald-500 rounded-full inline-block" />
-            <span>Safe Bypass Route</span>
+            <span className="w-3.5 h-1.5 bg-amber-500 rounded-full inline-block" />
+            <span className="text-amber-400 font-semibold">Moderate (20-35 km/h)</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <span className="w-3.5 h-1.5 bg-rose-500 rounded-full inline-block" />
+            <span className="text-rose-400 font-semibold">Heavy Jam (&lt;15 km/h)</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <span className="px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[9px] font-bold border border-white">⏱️ +Xm</span>
+            <span className="text-slate-300">Congestion Marker</span>
           </span>
         </div>
       </div>

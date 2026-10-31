@@ -297,82 +297,118 @@ export default function GISMapView({
 
     const boundsPoints = [];
 
-    // Draw Inactive / Alternative Route in Background (Continuous solid line, 50% opacity, no breaks)
-    if (activeRoute === 'safe' && routes.direct && routes.direct.path && routes.direct.path.length > 0) {
-      const directBg = L.polyline(routes.direct.path, {
-        color: '#f87171',
+    // 1. Draw Inactive / Alternate Route in Background (Translucent Grey/Muted Line)
+    const currentRoute = (activeRoute === 'safe' ? routes.safe : (activeRoute === 'shortest' ? routes.shortest : routes.direct)) || routes.direct || routes.safe;
+    const alternateRoute = (activeRoute === 'safe' ? routes.direct : routes.safe);
+
+    if (alternateRoute && alternateRoute.path && alternateRoute.path.length > 0) {
+      const altBg = L.polyline(alternateRoute.path, {
+        color: '#64748b',
         weight: 5,
-        opacity: 0.55,
+        opacity: 0.5,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map);
 
-      directBg.on('click', () => {
-        if (onSelectRoute) onSelectRoute('direct');
+      altBg.bindTooltip('<span style="font-size: 11px; font-weight: 700;">Click to select alternate route</span>', { sticky: true });
+      altBg.on('click', () => {
+        if (onSelectRoute) onSelectRoute(activeRoute === 'safe' ? 'direct' : 'safe');
       });
 
-      routeLayersRef.current.push(directBg);
-      boundsPoints.push(...routes.direct.path);
-    } else if (activeRoute === 'direct' && routes.safe && routes.safe.path && routes.safe.path.length > 0) {
-      const safeBg = L.polyline(routes.safe.path, {
-        color: '#34d399',
-        weight: 5,
-        opacity: 0.55,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(map);
-
-      safeBg.on('click', () => {
-        if (onSelectRoute) onSelectRoute('safe');
-      });
-
-      routeLayersRef.current.push(safeBg);
-      boundsPoints.push(...routes.safe.path);
+      routeLayersRef.current.push(altBg);
+      boundsPoints.push(...alternateRoute.path);
     }
 
-    // Draw Active Selected Route (Solid, Continuous, Glowing High-Contrast Google Maps Polyline)
-    if (activeRoute === 'safe' && routes.safe && routes.safe.path && routes.safe.path.length > 0) {
-      // Emerald Outer Glow
-      const glow = L.polyline(routes.safe.path, {
-        color: '#047857',
-        weight: 10,
-        opacity: 0.45,
+    // 2. Draw Active Route with Google Maps Live Traffic Coloring (Green / Orange / Red Segments)
+    if (currentRoute && currentRoute.path && currentRoute.path.length > 0) {
+      // Step A: Draw high-contrast road casing (dark border under the colored route, just like Google Maps)
+      const casing = L.polyline(currentRoute.path, {
+        color: '#0f172a',
+        weight: 9,
+        opacity: 0.9,
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map);
+      routeLayersRef.current.push(casing);
+      boundsPoints.push(...currentRoute.path);
 
-      // Core Solid Polyline (NO DASHES)
-      const line = L.polyline(routes.safe.path, {
-        color: '#10b981',
-        weight: 6,
-        opacity: 1.0,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(map);
+      // Step B: Draw Segmented Traffic Polylines (or solid fallback if no segments)
+      if (currentRoute.segments && currentRoute.segments.length > 0) {
+        currentRoute.segments.forEach(seg => {
+          const segLine = L.polyline(seg.path, {
+            color: seg.traffic_color || '#22c55e',
+            weight: 6,
+            opacity: 1.0,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(map);
 
-      routeLayersRef.current.push(glow, line);
-      boundsPoints.push(...routes.safe.path);
-    } else if (activeRoute === 'direct' && routes.direct && routes.direct.path && routes.direct.path.length > 0) {
-      // Crimson Outer Glow
-      const glow = L.polyline(routes.direct.path, {
-        color: '#b91c1c',
-        weight: 10,
-        opacity: 0.45,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(map);
+          // Interactive Tooltip showing Traffic Delay & Pothole Hazard
+          const trafficIcon = seg.traffic_status === 'HEAVY' ? '🔴' : seg.traffic_status === 'MODERATE' ? '🟡' : '🟢';
+          const tooltipHtml = `
+            <div style="font-family: system-ui, sans-serif; padding: 4px 6px; min-width: 170px;">
+              <div style="font-weight: 800; font-size: 12px; color: ${seg.traffic_color}; display: flex; align-items: center; gap: 4px;">
+                <span>${trafficIcon}</span>
+                <span>${seg.traffic_label || 'Traffic Segment'}</span>
+              </div>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">
+                Distance: <strong>${seg.distance_km} km</strong> • Avg Speed: <strong>${seg.avg_speed_kmh} km/h</strong>
+              </div>
+              ${seg.traffic_delay_min > 0 ? `
+                <div style="font-size: 11px; color: #f87171; font-weight: 700; margin-top: 2px;">
+                  ⏱️ Congestion Delay: +${seg.traffic_delay_min} min
+                </div>` : ''}
+              ${seg.potholes_count > 0 ? `
+                <div style="font-size: 11px; color: #fbbf24; font-weight: 700; margin-top: 2px;">
+                  ⚠️ ${seg.potholes_count} Potholes (+${seg.pothole_delay_min}m crawl)
+                </div>` : ''}
+            </div>
+          `;
+          segLine.bindTooltip(tooltipHtml, { sticky: true, opacity: 0.96 });
+          routeLayersRef.current.push(segLine);
 
-      // Core Solid Red Line (NO DASHES - CONTINUOUS RED LINE AS REQUESTED)
-      const line = L.polyline(routes.direct.path, {
-        color: '#ef4444',
-        weight: 6,
-        opacity: 1.0,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }).addTo(map);
-
-      routeLayersRef.current.push(glow, line);
-      boundsPoints.push(...routes.direct.path);
+          // Step C: Place Google Maps style Traffic Delay pill marker at midpoint of heavy delay segments
+          if (seg.traffic_status === 'HEAVY' && seg.traffic_delay_min >= 2.5 && seg.path && seg.path.length > 0) {
+            const midCoord = seg.path[Math.floor(seg.path.length / 2)];
+            const delayIcon = L.divIcon({
+              className: 'custom-traffic-delay-badge',
+              html: `
+                <div style="
+                  background: #ef4444;
+                  color: #ffffff;
+                  font-size: 10px;
+                  font-weight: 800;
+                  padding: 2px 7px;
+                  border-radius: 9999px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                  border: 1.5px solid #ffffff;
+                  white-space: nowrap;
+                  display: flex;
+                  align-items: center;
+                  gap: 3px;
+                ">
+                  <span>⏱️ +${Math.round(seg.traffic_delay_min)}m</span>
+                </div>
+              `,
+              iconSize: [52, 22],
+              iconAnchor: [26, 11]
+            });
+            const delayMarker = L.marker(midCoord, { icon: delayIcon, interactive: false }).addTo(map);
+            routeLayersRef.current.push(delayMarker);
+          }
+        });
+      } else {
+        // Fallback solid polyline
+        const defaultColor = activeRoute === 'safe' ? '#10b981' : '#ef4444';
+        const line = L.polyline(currentRoute.path, {
+          color: defaultColor,
+          weight: 6,
+          opacity: 1.0,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(map);
+        routeLayersRef.current.push(line);
+      }
     }
 
     if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
