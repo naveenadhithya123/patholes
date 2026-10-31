@@ -199,3 +199,23 @@ USING (bucket_id = 'defect-media');
 CREATE POLICY "Public Insert Access on defect-media"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'defect-media');
+
+-- 11. Insert Sample Registered Road Defects (Critical, Medium, Low & Resolved Before/After)
+INSERT INTO defects (ticket_code, type, category_label, title, description, severity, severity_score, depth_cm, width_cm, lat, lng, address, ward_no, zone, status, workflow_stage, assigned_subdivision_id, head_admin_approved, image_url, after_image_url, duration_took_str, repair_notes, reported_by) VALUES
+('NF-RD-1001', 'pothole', 'Severe Road Pothole', 'Deep Pothole on Silk Board Flyover Merge', 'Hazardous crater approx 14cm deep on inner lane. Causing sharp vehicle swerving.', 'CRITICAL', 94, 14, 60, 12.9177, 77.6238, 'Silk Board Junction, Outer Ring Road Flyover Ramp', 174, 'South', 'In Progress', 'IN_PROGRESS', 'subdiv-south-02', false, 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80', null, null, null, 'patrol_vehicle_bumper_cam'),
+('NF-RD-1004', 'pothole', 'Asphalt Cavity', 'Pothole on Whitefield Main Road near ITPL', 'Cavity approx 9cm deep in outer lane near bus stop causing bus swerving.', 'HIGH', 78, 9, 50, 12.9832, 77.7441, 'Whitefield Main Road near ITPL Gate 2', 84, 'East', 'Assigned to Sub-Division', 'ASSIGNED_TO_SUBDIVISION', 'subdiv-east-10', false, 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=800&q=80', null, null, null, 'patrol_vehicle_bumper_cam'),
+('NF-RD-1025', 'pothole', 'Minor Surface Pit', 'Surface Wear on Indiranagar 12th Main', 'Shallow pit ~4cm depth causing minor vibration for two-wheelers.', 'LOW', 45, 4, 30, 12.9721, 77.6415, '12th Main Rd, Indiranagar', 80, 'East', 'Assigned to Sub-Division', 'ASSIGNED_TO_SUBDIVISION', 'subdiv-east-01', false, 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80', null, null, null, 'patrol_vehicle_bumper_cam'),
+('NF-VEH-1031', 'pothole', 'Vehicle-Detected Severe Crater', 'Severe Pothole scanned by Patrol Car 03', 'YOLOv8 mobile sweep identified 14cm road defect on Indiranagar 100ft Road. Assigned to Indiranagar Sub-Division.', 'CRITICAL', 96, 14, 62, 12.9721, 77.6415, 'Indiranagar 100ft Road near 12th Main Junction', 80, 'East', 'Resolved', 'RESOLVED_VERIFIED', 'subdiv-east-01', true, '/images/pothole_before.jpg', '/images/pothole_after.jpg', '14 hours', 'Cavity milled to 50mm depth, tack-coat applied, dense bituminous macadam compacted flush with road level.', 'patrol_vehicle_bumper_cam'),
+('NF-VEH-1032', 'pothole', 'Asphalt Subsidence & Road Dip', 'Road Dip scanned by Patrol Car 08', 'Mobile LiDAR sweep detected 8cm road surface bump and subsidence on Koramangala 80ft Road.', 'MEDIUM', 74, 8, 52, 12.9344, 77.6225, 'Koramangala 80ft Road, 4th Block Arterial Corridor', 151, 'South', 'Resolved', 'RESOLVED_VERIFIED', 'subdiv-south-01', true, '/images/pothole_before.jpg', '/images/pothole_after.jpg', '22 hours', 'Asphalt depression leveled using hot-mix asphalt concrete, edges sealed with bituminous emulsion.', 'patrol_vehicle_bumper_cam'),
+('NF-VEH-1033', 'road_crack', 'Surface Wear & Micro-Crack', 'Surface Raveling scanned by Patrol Car 06', 'High speed bumper camera detected 4cm surface raveling on Hebbal Airport Expressway.', 'LOW', 48, 4, 35, 13.0362, 77.5968, 'Hebbal Flyover Expressway Approach Corridor', 7, 'North', 'Resolved', 'RESOLVED_VERIFIED', 'subdiv-north-01', true, '/images/pothole_before.jpg', '/images/pothole_after.jpg', '9 hours', 'Bituminous slurry seal applied over raveling surface. Sealed against water infiltration.', 'patrol_vehicle_bumper_cam');
+
+-- 12. Verification Test Query (Immediately confirms spatial nearest-neighbor match!)
+SELECT 
+    id AS matched_subdiv_id,
+    name AS closest_subdivision_name,
+    corporation,
+    engineer AS executive_engineer,
+    distance_km,
+    distance_meters
+FROM find_closest_subdivision(12.9609, 77.6387);
+
