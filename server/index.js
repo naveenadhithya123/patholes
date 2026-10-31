@@ -646,7 +646,8 @@ app.post('/api/defects/report', async (req, res) => {
     severity: userSeverity,
     dimensions: userDimensions,
     reported_by = 'citizen_manual_camera',
-    vehicle_telemetry = null
+    vehicle_telemetry = null,
+    auto_vision = null
   } = req.body;
 
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
@@ -694,7 +695,13 @@ app.post('/api/defects/report', async (req, res) => {
   // STEP 2: RUN REAL AI COMPUTER VISION INFERENCE
   let aiVisionResult = null;
   try {
-    aiVisionResult = await analyzeImageWithAI(image_data, { ...location, type: userType, dimensions: userDimensions });
+    aiVisionResult = await analyzeImageWithAI(image_data, {
+      ...location,
+      type: userType,
+      dimensions: userDimensions,
+      auto_vision,
+      detected: auto_vision ? auto_vision.detected : (userType !== 'none')
+    });
   } catch (err) {
     console.warn('AI vision analysis error:', err.message);
   }
@@ -709,13 +716,13 @@ app.post('/api/defects/report', async (req, res) => {
     });
   }
 
-  // If user explicitly sent 'none' and AI also found no damage:
-  if (userType === 'none' && (!aiVisionResult || !aiVisionResult.defect_detected)) {
+  // VALIDATION: Reject reports if NO authentic defect is detected
+  if (!aiVisionResult || !aiVisionResult.defect_detected) {
     return res.status(400).json({
       success: false,
       defect_detected: false,
       is_spoof: false,
-      message: 'Inspection Complete: No road or infrastructure damage detected in the captured frame. Camera must face actual damage to generate a municipal ticket.'
+      message: 'Inspection Complete: No authentic road or infrastructure damage detected in the captured frame. Camera must face actual road damage to generate a municipal ticket.'
     });
   }
 

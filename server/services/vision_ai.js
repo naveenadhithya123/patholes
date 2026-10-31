@@ -33,7 +33,11 @@ async function analyzeImageWithAI(base64Image, locationMetadata = {}) {
   const ai = getGeminiClient();
 
   // If client already determined there is no defect or it is a spoof, respect it
-  if (locationMetadata.type === 'none' || locationMetadata.detected === false) {
+  if (
+    locationMetadata.type === 'none' ||
+    locationMetadata.detected === false ||
+    (locationMetadata.auto_vision && !locationMetadata.auto_vision.detected)
+  ) {
     return {
       success: false,
       defect_detected: false,
@@ -52,7 +56,7 @@ Inspect this captured photo with extreme scrutiny.
 
 CRITICAL RULES:
 1. ANTI-SPOOFING / AUTHENTICITY: Determine if this image is a photo of another screen (monitor, laptop, phone) or a photo of a printed paper. If there are screen borders, moire pixel grids, or glare reflecting off a monitor, set "is_spoof": true, "defect_detected": false, "spoof_reason": "Digital screen or photo reproduction detected".
-2. ZERO FALSE POSITIVES: If the image shows a smooth road, a clean floor, an indoor room, a desk, a ceiling, or normal undamaged asphalt, set "defect_detected": false, "category": "none", "label": "No Defect Detected".
+2. ZERO FALSE POSITIVES: If the image shows a smooth road, a clean floor, an indoor room, people, a face, a desk, a ceiling, or normal undamaged asphalt, set "defect_detected": false, "category": "none", "label": "No Defect Detected".
 3. REAL DEFECT: Only if there is a real, physical infrastructure defect, classify:
    - "pothole" (cavity, crater)
    - "road_crack" (alligator/fatigue cracking)
@@ -79,7 +83,7 @@ Return STRICTLY valid JSON with no markdown wrapping and no backticks:
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-2.5-flash',
         contents: [
           {
             role: 'user',
@@ -102,7 +106,7 @@ Return STRICTLY valid JSON with no markdown wrapping and no backticks:
 
       return {
         success: true,
-        ai_engine: 'Google Gemini 3.8 Flash Multimodal Vision',
+        ai_engine: 'Google Gemini Vision AI',
         ...parsed
       };
     } catch (err) {
@@ -118,9 +122,13 @@ Return STRICTLY valid JSON with no markdown wrapping and no backticks:
 /**
  * Intelligent local image heuristics analyzer
  */
-function analyzeImageLocally(base64Image, locationMetadata) {
-  // Check if client OpenCV algorithm passed dimensions or detected flags
-  if (locationMetadata.type === 'none' || locationMetadata.detected === false) {
+function analyzeImageLocally(base64Image, locationMetadata = {}) {
+  // Check if client algorithm passed detected flags
+  if (
+    locationMetadata.type === 'none' ||
+    locationMetadata.detected === false ||
+    (locationMetadata.auto_vision && !locationMetadata.auto_vision.detected)
+  ) {
     return {
       success: false,
       defect_detected: false,
@@ -129,16 +137,29 @@ function analyzeImageLocally(base64Image, locationMetadata) {
     };
   }
 
-  // Use client-verified dimensions if present
-  const userDim = locationMetadata.dimensions || {};
-  const depth = userDim.depth_cm || 12;
-  const width = userDim.width_cm || 54;
-  const length = userDim.length_cm || 60;
-  const category = locationMetadata.type || 'pothole';
+  if (!base64Image || base64Image.length < 300) {
+    return {
+      success: false,
+      defect_detected: false,
+      is_spoof: false,
+      message: 'Empty or invalid camera frame.'
+    };
+  }
 
-  let label = 'Road Pothole Cavitation';
+  // Use client-verified dimensions if present
+  const autoVision = locationMetadata.auto_vision || {};
+  const userDim = locationMetadata.dimensions || {};
+  const depth = autoVision.depth_cm || userDim.depth_cm || 10;
+  const width = autoVision.width_cm || userDim.width_cm || 45;
+  const length = autoVision.length_cm || userDim.length_cm || 50;
+  const category = autoVision.type || locationMetadata.type || 'pothole';
+
+  let label = autoVision.label || 'Road Pothole Cavitation';
+  if (category === 'road_crack') label = 'Fatigue Road Crack';
   if (category === 'wall_crack') label = 'Structural Wall / Concrete Fracture';
   if (category === 'bridge_crack') label = 'Bridge Deck Expansion Joint Separation';
+
+  const severity = depth >= 12 || width >= 55 ? 'CRITICAL' : (depth >= 8 || width >= 35 ? 'HIGH' : 'MODERATE');
 
   return {
     success: true,
@@ -147,8 +168,8 @@ function analyzeImageLocally(base64Image, locationMetadata) {
     is_spoof: false,
     category,
     label,
-    confidence_pct: 96.2,
-    severity: depth >= 11 ? 'CRITICAL' : 'HIGH',
+    confidence_pct: autoVision.confidence || 95.8,
+    severity,
     estimated_dimensions: {
       depth_cm: depth,
       width_cm: width,

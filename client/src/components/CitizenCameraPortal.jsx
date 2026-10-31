@@ -67,7 +67,8 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
     is_spoof: false,
     spoof_reason: '',
     type: 'none',
-    label: 'Scanning Road Surface...',
+    label: 'Surface Clear',
+    scene_status: 'SCANNING SURFACE • ROAD CLEAR',
     confidence: 0,
     depth_cm: 0,
     width_cm: 0,
@@ -191,6 +192,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           let confidence = 0;
           let severity = 'NORMAL';
           let boxColor = '#10b981';
+          let sceneStatus = 'SCANNING ROAD • NO DEFECT DETECTED';
 
           if (video && video.readyState >= 2) {
             try {
@@ -203,13 +205,22 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
               const cols = 16;
               const rows = 9;
               const cellLum = Array.from({ length: cols }, () => new Float32Array(rows));
+              const cellSkinRatio = Array.from({ length: cols }, () => new Float32Array(rows));
+              const cellAsphaltRatio = Array.from({ length: cols }, () => new Float32Array(rows));
+
+              let totalSampled = 0;
               let totalLum = 0;
               let glarePixels = 0;
               let borderEdgeMatches = 0;
+              let globalSkinPixels = 0;
+              let globalNonRoadColoredPixels = 0;
+              let globalAsphaltPixels = 0;
 
               for (let ry = 0; ry < rows; ry++) {
                 for (let cx = 0; cx < cols; cx++) {
-                  let sum = 0;
+                  let cellSumLum = 0;
+                  let cellSkinCount = 0;
+                  let cellAsphaltCount = 0;
                   const startX = cx * 10;
                   const startY = ry * 10;
 
@@ -220,19 +231,67 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                       const g = data[idx + 1];
                       const b = data[idx + 2];
                       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                      sum += lum;
+                      cellSumLum += lum;
+                      totalLum += lum;
+                      totalSampled++;
 
-                      if (lum > 248 && Math.abs(r - g) < 8 && Math.abs(g - b) < 8) glarePixels++;
+                      const maxC = Math.max(r, g, b);
+                      const minC = Math.min(r, g, b);
+                      const diffC = maxC - minC;
+                      const sat = maxC > 0 ? diffC / maxC : 0;
+
+                      // Specular Glare / Screen Moire
+                      if (lum > 248 && diffC < 8) glarePixels++;
                       if ((ry === 0 || ry === rows - 1 || cx === 0 || cx === cols - 1) && Math.abs(r - g) > 40) borderEdgeMatches++;
+
+                      // Human Skin Tone Chromaticity (Peer/Kovac rule covering light to dark tones)
+                      const isSkin = (
+                        r > 55 && g > 35 && b > 20 &&
+                        r > g && g > b &&
+                        (r - g) >= 8 && (r - b) >= 12 &&
+                        diffC >= 12 &&
+                        sat >= 0.15 && sat <= 0.72
+                      );
+                      if (isSkin) {
+                        cellSkinCount++;
+                        globalSkinPixels++;
+                      }
+
+                      // High Chromatic Saturation / Indoor Lighting & Objects (Clothes, walls, wood, lamps)
+                      const isNonRoadColor = (
+                        sat > 0.30 ||
+                        (r > 150 && g > 120 && b < 100) ||
+                        (b > r + 18 && b > g + 10) ||
+                        (g > r + 18 && g > b + 12) ||
+                        (r > 165 && g < 110 && b < 110)
+                      );
+                      if (isNonRoadColor) {
+                        globalNonRoadColoredPixels++;
+                      }
+
+                      // Asphalt-like Neutral Grey Road Pixel
+                      const isAsphaltLike = (
+                        diffC <= 18 &&
+                        sat <= 0.22 &&
+                        lum >= 20 && lum <= 185
+                      );
+                      if (isAsphaltLike) {
+                        cellAsphaltCount++;
+                        globalAsphaltPixels++;
+                      }
                     }
                   }
-                  const avg = sum / 25;
-                  cellLum[cx][ry] = avg;
-                  totalLum += avg;
+
+                  cellLum[cx][ry] = cellSumLum / 25;
+                  cellSkinRatio[cx][ry] = cellSkinCount / 25;
+                  cellAsphaltRatio[cx][ry] = cellAsphaltCount / 25;
                 }
               }
 
-              const meanLum = totalLum / (cols * rows);
+              const globalMeanLum = totalLum / Math.max(1, totalSampled);
+              const skinRatio = globalSkinPixels / Math.max(1, totalSampled);
+              const nonRoadRatio = globalNonRoadColoredPixels / Math.max(1, totalSampled);
+              const asphaltRatio = globalAsphaltPixels / Math.max(1, totalSampled);
 
               // Anti-spoofing check
               if (glarePixels > 85 && borderEdgeMatches > 45) {
@@ -240,65 +299,221 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                 spoofReason = 'Screen glare detected. Point camera at physical road surface.';
               }
 
+              // Scene Domain Classification (Strict Zero False Positives)
               if (!isSpoof) {
-                let darkCells = [];
-                let minVal = 999;
-                for (let ry = 1; ry < rows - 1; ry++) {
-                  for (let cx = 1; cx < cols - 1; cx++) {
-                    const v = cellLum[cx][ry];
-                    if (v < meanLum * 0.72) {
-                      darkCells.push({ cx, ry, val: v });
-                      if (v < minVal) minVal = v;
+                if (skinRatio > 0.04) {
+                  // Human present in frame (face, body, hands)
+                  hasDefect = false;
+                  defectLabel = 'Human Scene Detected';
+                  sceneStatus = 'HUMAN IN FRAME • AIM CAMERA AT ROAD';
+                } else if (asphaltRatio < 0.35 || nonRoadRatio > 0.32) {
+                  // Indoor room, office, painted walls, clothing, wood furniture
+                  hasDefect = false;
+                  defectLabel = 'Surface Clear (Non-Road)';
+                  sceneStatus = 'SURFACE CLEAR • AIM CAMERA AT ROAD';
+                } else {
+                  // Authenticated Road Surface!
+                  // Compute baseline asphalt luminance
+                  let roadLumSum = 0;
+                  let roadCellCount = 0;
+                  for (let ry = 0; ry < rows; ry++) {
+                    for (let cx = 0; cx < cols; cx++) {
+                      if (cellAsphaltRatio[cx][ry] >= 0.45) {
+                        roadLumSum += cellLum[cx][ry];
+                        roadCellCount++;
+                      }
+                    }
+                  }
+                  const roadMeanLum = roadCellCount > 0 ? roadLumSum / roadCellCount : globalMeanLum;
+
+                  // 1. Pothole Cavity Inspection:
+                  // Must be darker than road, localized within frame (not touching borders)
+                  const darkCandidateCells = [];
+                  for (let ry = 1; ry < rows - 1; ry++) {
+                    for (let cx = 1; cx < cols - 1; cx++) {
+                      const v = cellLum[cx][ry];
+                      if (v < roadMeanLum * 0.68 && v < 88 && cellSkinRatio[cx][ry] < 0.1) {
+                        darkCandidateCells.push({ cx, ry, val: v });
+                      }
+                    }
+                  }
+
+                  // Find connected dark clusters
+                  const visited = Array.from({ length: cols }, () => new Uint8Array(rows));
+                  const clusters = [];
+
+                  for (const cell of darkCandidateCells) {
+                    if (visited[cell.cx][cell.ry]) continue;
+                    const queue = [cell];
+                    visited[cell.cx][cell.ry] = 1;
+                    const cluster = [];
+
+                    while (queue.length > 0) {
+                      const curr = queue.shift();
+                      cluster.push(curr);
+
+                      const neighbors = [
+                        { cx: curr.cx - 1, ry: curr.ry },
+                        { cx: curr.cx + 1, ry: curr.ry },
+                        { cx: curr.cx, ry: curr.ry - 1 },
+                        { cx: curr.cx, ry: curr.ry + 1 }
+                      ];
+
+                      for (const n of neighbors) {
+                        if (n.cx >= 1 && n.cx < cols - 1 && n.ry >= 1 && n.ry < rows - 1 && !visited[n.cx][n.ry]) {
+                          const candidate = darkCandidateCells.find(c => c.cx === n.cx && c.ry === n.ry);
+                          if (candidate) {
+                            visited[n.cx][n.ry] = 1;
+                            queue.push(candidate);
+                          }
+                        }
+                      }
+                    }
+                    clusters.push(cluster);
+                  }
+
+                  // Evaluate clusters against authentic pothole criteria
+                  let bestPothole = null;
+                  for (const cluster of clusters) {
+                    // Realistic pothole size: between 2 and 14 cells (not full screen, not giant shadows)
+                    if (cluster.length >= 2 && cluster.length <= 14) {
+                      // Verify the perimeter of this cluster is enclosed by asphalt
+                      let rimAsphaltCount = 0;
+                      let rimTotalCount = 0;
+
+                      for (const c of cluster) {
+                        const adj = [
+                          { cx: c.cx - 1, ry: c.ry },
+                          { cx: c.cx + 1, ry: c.ry },
+                          { cx: c.cx, ry: c.ry - 1 },
+                          { cx: c.cx, ry: c.ry + 1 }
+                        ];
+                        for (const a of adj) {
+                          if (!cluster.some(item => item.cx === a.cx && item.ry === a.ry)) {
+                            rimTotalCount++;
+                            if (a.cx >= 0 && a.cx < cols && a.ry >= 0 && a.ry < rows) {
+                              if (cellAsphaltRatio[a.cx][a.ry] >= 0.40) rimAsphaltCount++;
+                            }
+                          }
+                        }
+                      }
+
+                      const rimRatio = rimTotalCount > 0 ? rimAsphaltCount / rimTotalCount : 0;
+                      const clusterMinVal = Math.min(...cluster.map(c => c.val));
+                      const contrastDrop = roadMeanLum - clusterMinVal;
+
+                      if (rimRatio >= 0.50 && contrastDrop >= 20) {
+                        if (!bestPothole || cluster.length > bestPothole.length) {
+                          bestPothole = { cluster, clusterMinVal, contrastDrop };
+                        }
+                      }
+                    }
+                  }
+
+                  if (bestPothole) {
+                    hasDefect = true;
+                    defectType = 'pothole';
+                    defectLabel = 'Pothole Cavity';
+
+                    let minX = 16, maxX = 0, minY = 9, maxY = 0;
+                    bestPothole.cluster.forEach(c => {
+                      if (c.cx < minX) minX = c.cx;
+                      if (c.cx > maxX) maxX = c.cx;
+                      if (c.ry < minY) minY = c.ry;
+                      if (c.ry > maxY) maxY = c.ry;
+                    });
+
+                    const cavityDropRatio = Math.min(1.0, bestPothole.contrastDrop / Math.max(1, roadMeanLum));
+                    depth = Math.round(6 + cavityDropRatio * 12);
+                    defectWidth = Math.round(22 + (maxX - minX + 1) * 7.0);
+                    defectLength = Math.round(25 + (maxY - minY + 1) * 7.5);
+                    confidence = Math.min(98, Math.round(85 + bestPothole.cluster.length * 1.5));
+
+                    if (depth >= 12 || defectWidth >= 55) {
+                      severity = 'CRITICAL';
+                      boxColor = '#ef4444';
+                    } else if (depth >= 8 || defectWidth >= 35) {
+                      severity = 'HIGH';
+                      boxColor = '#f59e0b';
+                    } else {
+                      severity = 'MODERATE';
+                      boxColor = '#06b6d4';
+                    }
+
+                    const targetBox = {
+                      x: Math.max(0.08, minX / cols - 0.03),
+                      y: Math.max(0.08, minY / rows - 0.03),
+                      w: Math.min(0.84, (maxX - minX + 1) / cols + 0.06),
+                      h: Math.min(0.84, (maxY - minY + 1) / rows + 0.06)
+                    };
+
+                    smoothBoxRef.current = {
+                      x: smoothBoxRef.current.x * 0.65 + targetBox.x * 0.35,
+                      y: smoothBoxRef.current.y * 0.65 + targetBox.y * 0.35,
+                      w: smoothBoxRef.current.w * 0.65 + targetBox.w * 0.35,
+                      h: smoothBoxRef.current.h * 0.65 + targetBox.h * 0.35
+                    };
+                  } else {
+                    // Check for longitudinal or transverse cracks along asphalt
+                    let maxGradient = 0;
+                    let crackPoints = [];
+                    for (let ry = 1; ry < rows - 1; ry++) {
+                      for (let cx = 1; cx < cols - 2; cx++) {
+                        if (cellAsphaltRatio[cx][ry] >= 0.40) {
+                          const gx = Math.abs(cellLum[cx][ry] - cellLum[cx + 1][ry]);
+                          const gy = Math.abs(cellLum[cx][ry] - cellLum[cx][ry + 1]);
+                          const grad = Math.max(gx, gy);
+                          if (grad > 32) {
+                            crackPoints.push({ cx, ry, grad });
+                            if (grad > maxGradient) maxGradient = grad;
+                          }
+                        }
+                      }
+                    }
+
+                    if (crackPoints.length >= 3 && crackPoints.length <= 8) {
+                      hasDefect = true;
+                      defectType = 'road_crack';
+                      defectLabel = 'Fatigue Road Crack';
+                      depth = 4;
+                      defectWidth = 12;
+                      defectLength = Math.round(25 + crackPoints.length * 6);
+                      confidence = 91;
+                      severity = 'HIGH';
+                      boxColor = '#f59e0b';
+
+                      let minX = 16, maxX = 0, minY = 9, maxY = 0;
+                      crackPoints.forEach(c => {
+                        if (c.cx < minX) minX = c.cx;
+                        if (c.cx > maxX) maxX = c.cx;
+                        if (c.ry < minY) minY = c.ry;
+                        if (c.ry > maxY) maxY = c.ry;
+                      });
+
+                      const targetBox = {
+                        x: Math.max(0.1, minX / cols - 0.04),
+                        y: Math.max(0.1, minY / rows - 0.04),
+                        w: Math.min(0.8, (maxX - minX + 1) / cols + 0.08),
+                        h: Math.min(0.8, (maxY - minY + 1) / rows + 0.08)
+                      };
+
+                      smoothBoxRef.current = {
+                        x: smoothBoxRef.current.x * 0.65 + targetBox.x * 0.35,
+                        y: smoothBoxRef.current.y * 0.65 + targetBox.y * 0.35,
+                        w: smoothBoxRef.current.w * 0.65 + targetBox.w * 0.35,
+                        h: smoothBoxRef.current.h * 0.65 + targetBox.h * 0.35
+                      };
+                    } else {
+                      hasDefect = false;
+                      defectLabel = 'Road Surface Clear';
+                      sceneStatus = 'ROAD SURFACE CLEAR • NO DEFECTS';
                     }
                   }
                 }
-
-                if (darkCells.length >= 3) {
-                  hasDefect = true;
-                  defectType = 'pothole';
-                  defectLabel = 'Pothole Cavity';
-
-                  let minX = 16, maxX = 0, minY = 9, maxY = 0;
-                  darkCells.forEach(c => {
-                    if (c.cx < minX) minX = c.cx;
-                    if (c.cx > maxX) maxX = c.cx;
-                    if (c.ry < minY) minY = c.ry;
-                    if (c.ry > maxY) maxY = c.ry;
-                  });
-
-                  const cavityDropRatio = Math.max(0.2, (meanLum - minVal) / Math.max(1, meanLum));
-                  depth = Math.round(7 + cavityDropRatio * 14);
-                  defectWidth = Math.round(25 + (maxX - minX + 1) * 6.5);
-                  defectLength = Math.round(28 + (maxY - minY + 1) * 7.0);
-                  confidence = Math.min(98, Math.round(82 + darkCells.length * 2.2));
-
-                  if (depth >= 13 || defectWidth >= 50) {
-                    severity = 'CRITICAL';
-                    boxColor = '#ef4444';
-                  } else if (depth >= 8 || defectWidth >= 35) {
-                    severity = 'HIGH';
-                    boxColor = '#f59e0b';
-                  } else {
-                    severity = 'MODERATE';
-                    boxColor = '#06b6d4';
-                  }
-
-                  const targetBox = {
-                    x: Math.max(0.08, minX / cols - 0.04),
-                    y: Math.max(0.08, minY / rows - 0.04),
-                    w: Math.min(0.85, (maxX - minX + 1) / cols + 0.08),
-                    h: Math.min(0.85, (maxY - minY + 1) / rows + 0.08)
-                  };
-
-                  smoothBoxRef.current = {
-                    x: smoothBoxRef.current.x * 0.7 + targetBox.x * 0.3,
-                    y: smoothBoxRef.current.y * 0.7 + targetBox.y * 0.3,
-                    w: smoothBoxRef.current.w * 0.7 + targetBox.w * 0.3,
-                    h: smoothBoxRef.current.h * 0.7 + targetBox.h * 0.3
-                  };
-                }
               }
-            } catch (cvErr) {}
+            } catch (cvErr) {
+              console.warn('Frame processing note:', cvErr);
+            }
           } else if (simulatedFeed) {
             hasDefect = true;
             defectType = 'pothole';
@@ -324,6 +539,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
             spoof_reason: spoofReason,
             type: defectType,
             label: defectLabel,
+            scene_status: sceneStatus,
             confidence,
             depth_cm: depth,
             width_cm: defectWidth,
@@ -415,28 +631,34 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           const cx = width / 2;
           const cy = height / 2;
 
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 26, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.moveTo(cx - 32, cy); ctx.lineTo(cx - 8, cy);
-          ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 32, cy);
-          ctx.moveTo(cx, cy - 32); ctx.lineTo(cx, cy - 8);
-          ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy + 32);
+          ctx.moveTo(cx - 36, cy); ctx.lineTo(cx - 10, cy);
+          ctx.moveTo(cx + 10, cy); ctx.lineTo(cx + 36, cy);
+          ctx.moveTo(cx, cy - 36); ctx.lineTo(cx, cy - 10);
+          ctx.moveTo(cx, cy + 10); ctx.lineTo(cx, cy + 36);
           ctx.stroke();
 
           // Status Badge at top
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-          ctx.fillRect(cx - 140, 16, 280, 22);
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-          ctx.strokeRect(cx - 140, 16, 280, 22);
-          ctx.fillStyle = '#34d399';
+          const isHuman = (v.scene_status || '').includes('HUMAN');
+          const isIndoor = (v.scene_status || '').includes('CLEAR • AIM');
+          const badgeBg = isHuman ? 'rgba(24, 18, 12, 0.92)' : 'rgba(15, 23, 42, 0.88)';
+          const badgeBorder = isHuman ? 'rgba(245, 158, 11, 0.5)' : (isIndoor ? 'rgba(148, 163, 184, 0.4)' : 'rgba(16, 185, 129, 0.4)');
+          const textColor = isHuman ? '#fbbf24' : (isIndoor ? '#94a3b8' : '#34d399');
+
+          ctx.fillStyle = badgeBg;
+          ctx.fillRect(cx - 150, 16, 300, 24);
+          ctx.strokeStyle = badgeBorder;
+          ctx.strokeRect(cx - 150, 16, 300, 24);
+          ctx.fillStyle = textColor;
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
-          ctx.fillText('SCANNING SURFACE • ROAD CLEAR', cx, 31);
+          ctx.fillText(v.scene_status || 'SCANNING SURFACE • ROAD CLEAR', cx, 32);
           ctx.textAlign = 'start';
         }
       }
@@ -488,7 +710,12 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
   // Submit Defect with Verified Location
   const handlePostDefect = async () => {
     if (autoVisionResult.is_spoof) {
-      alert('Digital screen detected. Please point camera at actual road damage.');
+      alert('Digital screen detected. Please point camera at actual physical road damage.');
+      return;
+    }
+
+    if (!autoVisionResult.detected) {
+      alert('No road surface defect detected in the camera frame. Please aim your camera directly at an authentic road pothole or crack before submitting.');
       return;
     }
 
@@ -510,12 +737,12 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
           console.warn('Snapshot capture note:', snapErr);
         }
 
-        const payloadType = autoVisionResult.detected ? autoVisionResult.type : 'pothole';
-        const payloadSeverity = autoVisionResult.detected ? autoVisionResult.severity : 'HIGH';
+        const payloadType = autoVisionResult.type || 'pothole';
+        const payloadSeverity = autoVisionResult.severity || 'HIGH';
         const payloadDimensions = {
-          depth_cm: autoVisionResult.detected && autoVisionResult.depth_cm > 0 ? autoVisionResult.depth_cm : 12,
-          width_cm: autoVisionResult.detected && autoVisionResult.width_cm > 0 ? autoVisionResult.width_cm : 45,
-          length_cm: autoVisionResult.detected && autoVisionResult.length_cm > 0 ? autoVisionResult.length_cm : 50
+          depth_cm: autoVisionResult.depth_cm > 0 ? autoVisionResult.depth_cm : 10,
+          width_cm: autoVisionResult.width_cm > 0 ? autoVisionResult.width_cm : 45,
+          length_cm: autoVisionResult.length_cm > 0 ? autoVisionResult.length_cm : 50
         };
 
         const response = await fetch('/api/defects/report', {
@@ -533,7 +760,17 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
             severity: payloadSeverity,
             dimensions: payloadDimensions,
             image_data: capturedSnapshot,
-            reported_by: 'citizen_camera'
+            reported_by: 'citizen_camera',
+            auto_vision: {
+              detected: autoVisionResult.detected,
+              type: autoVisionResult.type,
+              label: autoVisionResult.label,
+              confidence: autoVisionResult.confidence,
+              severity: autoVisionResult.severity,
+              is_spoof: autoVisionResult.is_spoof,
+              depth_cm: autoVisionResult.depth_cm,
+              width_cm: autoVisionResult.width_cm
+            }
           })
         });
 
@@ -723,14 +960,20 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                   <span className="font-bold">SCREEN DETECTED</span>
                 </div>
               ) : autoVisionResult.detected ? (
-                <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-cyan-500/40 text-[10px] font-mono text-cyan-300 flex items-center space-x-1.5">
-                  <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{autoVisionResult.label.toUpperCase()}</span>
+                <div className={`absolute top-3 right-3 backdrop-blur-md px-3 py-1.5 rounded-lg border text-[10px] font-mono flex items-center space-x-1.5 shadow-lg ${
+                  autoVisionResult.severity === 'CRITICAL'
+                    ? 'bg-rose-950/90 border-rose-500/60 text-rose-300'
+                    : autoVisionResult.severity === 'HIGH'
+                      ? 'bg-amber-950/90 border-amber-500/60 text-amber-300'
+                      : 'bg-cyan-950/90 border-cyan-500/60 text-cyan-300'
+                }`}>
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span className="font-bold">{autoVisionResult.label.toUpperCase()} • {autoVisionResult.severity}</span>
                 </div>
               ) : (
-                <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-[10px] font-mono text-slate-400 flex items-center space-x-1.5">
+                <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 text-[10px] font-mono text-slate-300 flex items-center space-x-1.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <span>SCANNING SURFACE</span>
+                  <span>SURFACE CLEAR • SCANNING</span>
                 </div>
               )}
 
@@ -773,8 +1016,8 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                   </div>
                 ) : (
                   <>
-                    <AlertCircle className="w-4 h-4 text-slate-500" />
-                    <span className="text-slate-400">Point camera at the damaged road or cavity.</span>
+                    <AlertCircle className="w-4 h-4 text-emerald-400" />
+                    <span className="text-slate-300 font-medium">{autoVisionResult.scene_status || 'Point camera directly at damaged road cavity or crack.'}</span>
                   </>
                 )}
               </div>
@@ -784,17 +1027,26 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
                 type="button"
                 onClick={handlePostDefect}
                 disabled={isAnalyzing}
-                className="w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center space-x-2 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/25"
+                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs shadow-xl flex items-center justify-center space-x-2 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                  autoVisionResult.detected
+                    ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/25 ring-2 ring-cyan-500/40'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                }`}
               >
                 {isAnalyzing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
                     <span>{isLocating ? 'Acquiring Device GPS...' : 'Submitting Defect Report...'}</span>
                   </>
-                ) : (
+                ) : autoVisionResult.detected ? (
                   <>
                     <Camera className="w-4 h-4 text-white" />
-                    <span>Submit Defect Report</span>
+                    <span>Submit Verified Defect</span>
+                  </>
+                ) : (
+                  <>
+                    <Crosshair className="w-4 h-4 text-slate-400" />
+                    <span>Point at Defect to Submit</span>
                   </>
                 )}
               </button>
@@ -876,20 +1128,22 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
               <div className="flex justify-between text-slate-300">
                 <span>Identified Defect:</span>
-                <span className="text-white font-semibold">
-                  {autoVisionResult.detected ? autoVisionResult.label : 'Scanning...'}
+                <span className={autoVisionResult.detected ? 'text-white font-semibold' : 'text-slate-400 font-medium'}>
+                  {autoVisionResult.detected ? autoVisionResult.label : (autoVisionResult.scene_status || 'Surface Clear (No Defect)')}
                 </span>
               </div>
               <div className="flex justify-between text-slate-300">
                 <span>Severity:</span>
                 <span className={`font-bold ${
-                  autoVisionResult.severity === 'CRITICAL'
-                    ? 'text-rose-400'
-                    : autoVisionResult.severity === 'HIGH'
-                      ? 'text-amber-400'
-                      : 'text-cyan-400'
+                  !autoVisionResult.detected
+                    ? 'text-emerald-400'
+                    : autoVisionResult.severity === 'CRITICAL'
+                      ? 'text-rose-400'
+                      : autoVisionResult.severity === 'HIGH'
+                        ? 'text-amber-400'
+                        : 'text-cyan-400'
                 }`}>
-                  {autoVisionResult.detected ? autoVisionResult.severity : 'Normal'}
+                  {autoVisionResult.detected ? autoVisionResult.severity : 'Normal (No Damage)'}
                 </span>
               </div>
               <div className="flex justify-between text-slate-300">
