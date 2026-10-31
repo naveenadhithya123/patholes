@@ -345,7 +345,6 @@ function analyzeRouteTraffic(rawPath, defectsList = [], baseDurationMin = null) 
   const totalETAMin = Math.round((baseDrivingMin + totalTrafficDelayMin + totalPotholeDelayMin) * 10) / 10;
 
   return {
-    path: rawPath,
     segments,
     distance_km: totalDistanceKm,
     base_driving_min: baseDrivingMin,
