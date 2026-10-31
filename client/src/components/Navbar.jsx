@@ -7,7 +7,7 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Logo & Civic Identity: Infra AI */}
+          {/* Logo & Civic Identity: NammaFix */}
           <div 
             className="flex items-center space-x-3 cursor-pointer" 
             onClick={() => {
@@ -21,14 +21,14 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                  Infra <span className="text-blue-400">AI</span>
+                  Namma<span className="text-blue-400">Fix</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                   BBMP Smart City
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                AI Urban Infrastructure & Road Asset Monitoring
+                Bengaluru Road Safety & Defect Resolution System
               </p>
             </div>
           </div>

@@ -142,7 +142,7 @@ function analyzeImageLocally(base64Image, locationMetadata) {
 
   return {
     success: true,
-    ai_engine: 'InfraAI Computer Vision Pipeline',
+    ai_engine: 'NammaFix Computer Vision Pipeline',
     defect_detected: true,
     is_spoof: false,
     category,

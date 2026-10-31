@@ -354,7 +354,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     const activeDefects = [
       {
         id: 'road-pothole-1',
-        ticket_code: 'INFRA-P1-01',
+        ticket_code: 'NF-P1-01',
         severity: 'CRITICAL',
         category_label: 'Severe Pothole Cavity on Asphalt Road',
         location: { lat: pLat, lng: pLng, address: `Roadway approaching ${destination.name}` },

@@ -701,7 +701,7 @@ export default function PublicCivicTracker({ onBack, onSelectView }) {
       <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-800/80 text-center space-y-2 text-xs text-slate-400 max-w-4xl mx-auto">
         <div className="flex items-center justify-center space-x-2 text-emerald-400 font-bold">
           <ShieldCheck className="w-4 h-4" />
-          <span>Infra AI Civic Accountability Guarantee</span>
+          <span>NammaFix Civic Accountability Guarantee</span>
         </div>
         <p className="leading-relaxed">
           Every completed defect shown on this public portal requires authenticated dual-camera verification (Original Citizen Report vs Contractor After-Repair Photo) confirmed and stamped by the Municipal Chief Infrastructure Commissioner before public release.

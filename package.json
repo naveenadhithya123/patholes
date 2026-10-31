@@ -1,7 +1,7 @@
 {
-  "name": "alliance-one",
+  "name": "nammafix",
   "version": "1.0.0",
-  "description": "CivicEye AI - AI-Based Urban Infrastructure & Road Asset Monitoring System",
+  "description": "NammaFix - Smart City Road Defect Tracking & Pothole Resolution Platform for Bengaluru",
   "main": "server/index.js",
   "scripts": {
     "server": "node server/index.js",

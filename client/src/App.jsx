@@ -18,7 +18,7 @@ export default function App() {
 
   const [govUser, setGovUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('infra_ai_gov_user');
+      const saved = localStorage.getItem('nammafix_gov_user') || localStorage.getItem('infra_ai_gov_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -90,11 +90,12 @@ export default function App() {
 
   const handleLogin = (user, token) => {
     setGovUser(user);
-    localStorage.setItem('infra_ai_gov_user', JSON.stringify(user));
+    localStorage.setItem('nammafix_gov_user', JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setGovUser(null);
+    localStorage.removeItem('nammafix_gov_user');
     localStorage.removeItem('infra_ai_gov_user');
     navigateTo('/');
   };
@@ -177,7 +178,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Infra AI Platform • Greater Bengaluru Road Defect Resolution & Safety System</span>
+            <span>NammaFix Platform • Greater Bengaluru Road Defect Resolution & Safety System</span>
           </div>
           <div className="flex items-center space-x-4 text-slate-400">
             <span>5 Corporations</span>

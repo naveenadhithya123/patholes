@@ -29,7 +29,7 @@ app.get('/api/system/ai-status', (req, res) => {
   res.json({
     success: true,
     has_gemini_key: hasKey,
-    active_engine: hasKey ? 'Google Gemini 2.5 Flash Vision API' : 'InfraAI Edge Computer Vision Pipeline',
+    active_engine: hasKey ? 'Google Gemini 2.5 Flash Vision API' : 'NammaFix Edge Computer Vision Pipeline',
     model: 'gemini-2.5-flash',
     instruction: 'You can add your Google Gemini API key to activate Gemini 2.5 Flash Vision, or continue using the built-in edge computer vision pipeline.'
   });
@@ -1272,7 +1272,7 @@ if (clientDistPath) {
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`Infra AI Municipal Monitoring API server running on port ${PORT}`);
+    console.log(`NammaFix Municipal Monitoring API server running on port ${PORT}`);
   });
 }
 

@@ -37,7 +37,7 @@ export default function GISMapView({
 
       // Authentic Google Maps Satellite Hybrid (Real Buildings, Rooftops, Real Roads, Street Names)
       L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Satellite | Infra AI GIS',
+        attribution: '&copy; Google Satellite | NammaFix GIS',
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
       }).addTo(map);
