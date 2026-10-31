@@ -56,6 +56,10 @@ export default function HeadAdminDashboard({ govUser, onLogout, defects = [], ro
   // Detail Modal for single defect inspection
   const [selectedDefect, setSelectedDefect] = useState(null);
 
+  // GIS Tab Specific Severity Stage Filter & Selected Defect Drawer
+  const [gisStageFilter, setGisStageFilter] = useState('ALL');
+  const [gisSelectedDefect, setGisSelectedDefect] = useState(null);
+
   // Simulation loading state
   const [isSimulatingDefect, setIsSimulatingDefect] = useState(false);
 
@@ -752,18 +756,225 @@ export default function HeadAdminDashboard({ govUser, onLogout, defects = [], ro
             </div>
           )}
 
-          {/* MAIN TAB 3: GIS MAP VIEW */}
-          {mainViewTab === 'gis_map' && (
-            <div className="bg-slate-900 rounded-3xl border border-slate-800 p-4 shadow-xl">
-              <div className="h-[550px] rounded-2xl overflow-hidden">
-                <GISMapView 
-                  defects={defects}
-                  roads={roads}
-                  onSelectDefect={(d) => setSelectedDefect(d)}
-                />
+          {/* MAIN TAB 3: GIS MAP VIEW (WITH CRITICAL, MEDIUM, AND LOW STAGES TELEMETRY) */}
+          {mainViewTab === 'gis_map' && (() => {
+            const gisCriticalCount = defects.filter(d => ['CRITICAL', 'SEVERE'].includes((d.severity || '').toUpperCase())).length;
+            const gisMediumCount = defects.filter(d => ['MEDIUM', 'MODERATE', 'HIGH'].includes((d.severity || '').toUpperCase())).length;
+            const gisLowCount = defects.filter(d => ['LOW', 'MINOR'].includes((d.severity || '').toUpperCase())).length;
+            const gisResolvedCount = defects.filter(d => d.status === 'Resolved').length;
+
+            const displayedGisDefects = defects.filter(d => {
+              if (gisStageFilter === 'CRITICAL') return ['CRITICAL', 'SEVERE'].includes((d.severity || '').toUpperCase());
+              if (gisStageFilter === 'MEDIUM') return ['MEDIUM', 'MODERATE', 'HIGH'].includes((d.severity || '').toUpperCase());
+              if (gisStageFilter === 'LOW') return ['LOW', 'MINOR'].includes((d.severity || '').toUpperCase());
+              if (gisStageFilter === 'RESOLVED') return d.status === 'Resolved';
+              return true;
+            });
+
+            return (
+              <div className="space-y-4">
+                {/* Stage Telemetry & Interactive Filter Bar */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                        <h3 className="text-base font-extrabold text-white">
+                          Municipal Road Defect Stages GIS Satellite Map
+                        </h3>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Real-time citywide geospatial distribution across 5 Corporations and 50 Sub-Divisions
+                      </p>
+                    </div>
+
+                    <div className="text-xs font-mono text-cyan-400 bg-cyan-950/50 border border-cyan-800/60 px-3 py-1.5 rounded-xl">
+                      Displaying <strong>{displayedGisDefects.length}</strong> of {defects.length} registered defects
+                    </div>
+                  </div>
+
+                  {/* Stage Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-mono text-slate-400 flex items-center mr-1">
+                      <Filter className="w-3.5 h-3.5 mr-1 text-slate-500" /> Filter Stage:
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setGisStageFilter('ALL')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                        gisStageFilter === 'ALL'
+                          ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-600/30'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                      }`}
+                    >
+                      All Stages ({defects.length})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setGisStageFilter('CRITICAL')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+                        gisStageFilter === 'CRITICAL'
+                          ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-600/30'
+                          : 'bg-slate-950 text-rose-400 border-rose-900/60 hover:bg-rose-950/40'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                      <span>🔴 Critical Stage ({gisCriticalCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setGisStageFilter('MEDIUM')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+                        gisStageFilter === 'MEDIUM'
+                          ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30'
+                          : 'bg-slate-950 text-amber-400 border-amber-900/60 hover:bg-amber-950/40'
+                      }`}
+                    >
+                      <span>🟡 Medium Stage ({gisMediumCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setGisStageFilter('LOW')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+                        gisStageFilter === 'LOW'
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30'
+                          : 'bg-slate-950 text-emerald-400 border-emerald-900/60 hover:bg-emerald-950/40'
+                      }`}
+                    >
+                      <span>🟢 Low Stage ({gisLowCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setGisStageFilter('RESOLVED')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+                        gisStageFilter === 'RESOLVED'
+                          ? 'bg-teal-600 text-white border-teal-400 shadow-md shadow-teal-600/30'
+                          : 'bg-slate-950 text-teal-400 border-teal-900/60 hover:bg-teal-950/40'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Solved / Repaired ({gisResolvedCount})</span>
+                    </button>
+                  </div>
+
+                  {/* 3 Severity Stages Explanatory Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                    <div className="bg-slate-950/60 border border-rose-900/40 p-3 rounded-2xl flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 font-black text-sm">
+                        !
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-extrabold text-rose-300">Critical Stage (Depth &ge; 11cm)</div>
+                        <div className="text-slate-400 text-[11px] mt-0.5">
+                          Severe axle strike & tire blowout hazard. Auto-dispatched for immediate hot-mix compaction.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-amber-900/40 p-3 rounded-2xl flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-black text-sm">
+                        ▲
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-extrabold text-amber-300">Medium Stage (Depth 6-10cm)</div>
+                        <div className="text-slate-400 text-[11px] mt-0.5">
+                          Roadway bumps, edge chipping, asphalt depression. 48-hour scheduled work order.
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-emerald-900/40 p-3 rounded-2xl flex items-start space-x-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-black text-sm">
+                        ●
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-extrabold text-emerald-300">Low Stage (Depth 2-5cm)</div>
+                        <div className="text-slate-400 text-[11px] mt-0.5">
+                          Surface raveling, minor micro-cracks. Monitored for preventive bituminous sealing.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Satellite Leaflet Map Container */}
+                <div className="bg-slate-900 rounded-3xl border border-slate-800 p-3 shadow-xl">
+                  <div className="h-[580px] rounded-2xl overflow-hidden">
+                    <GISMapView 
+                      defects={displayedGisDefects}
+                      roads={roads}
+                      onSelectDefect={(d) => {
+                        setGisSelectedDefect(d);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Defect Quick-Inspect Card when an official clicks a pin */}
+                {gisSelectedDefect && (
+                  <div className="bg-slate-900 border border-blue-500/40 rounded-3xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
+                        <img 
+                          src={gisSelectedDefect.image_url || '/images/pothole_before.jpg'} 
+                          alt="Pothole"
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-xs font-bold text-blue-400">
+                            #{gisSelectedDefect.ticket_code}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ['CRITICAL', 'SEVERE'].includes((gisSelectedDefect.severity || '').toUpperCase())
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              : ['MEDIUM', 'MODERATE', 'HIGH'].includes((gisSelectedDefect.severity || '').toUpperCase())
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          }`}>
+                            {gisSelectedDefect.severity || 'CRITICAL'} STAGE
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            gisSelectedDefect.status === 'Resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-300'
+                          }`}>
+                            {gisSelectedDefect.status}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-white mt-1">{gisSelectedDefect.title}</h4>
+                        <p className="text-xs text-slate-400">
+                          Assigned: <strong className="text-white">{gisSelectedDefect.assigned_subdivision?.name || 'Local Sub-Division'}</strong> ({gisSelectedDefect.assigned_subdivision?.corporation || 'Bangalore'} Corp) • {gisSelectedDefect.location?.address}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDefect(gisSelectedDefect)}
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-lg shadow-blue-600/30 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Inspect Full Work Order</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGisSelectedDefect(null)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
         </div>
       )}

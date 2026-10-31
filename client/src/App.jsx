@@ -5,6 +5,7 @@ import MapViewPage from './components/MapViewPage';
 import CitizenCameraPortal from './components/CitizenCameraPortal';
 import FindByAreaView from './components/FindByAreaView';
 import PublicCivicTracker from './components/PublicCivicTracker';
+import CarTrackingView from './components/CarTrackingView';
 import GovernmentPortal from './components/GovernmentPortal';
 
 export default function App() {
@@ -13,7 +14,7 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
 
   // Active subview on the main platform:
-  // 'home' | 'map' | 'capture' | 'tracker' | 'area'
+  // 'home' | 'map' | 'capture' | 'tracker' | 'area' | 'car_tracking'
   const [currentView, setCurrentView] = useState('home');
 
   const [govUser, setGovUser] = useState(() => {
@@ -159,6 +160,12 @@ export default function App() {
           <PublicCivicTracker
             onBack={() => setCurrentView('home')}
             onSelectView={setCurrentView}
+          />
+        ) : currentView === 'car_tracking' ? (
+          <CarTrackingView
+            onBack={() => setCurrentView('home')}
+            defects={defects}
+            onDefectUpdated={handleDefectUpdated}
           />
         ) : currentView === 'area' ? (
           <FindByAreaView

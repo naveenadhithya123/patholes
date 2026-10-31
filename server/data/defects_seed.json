@@ -1256,5 +1256,143 @@
       "engineer": "Er. B. S. Kumar",
       "email": "subdiv.sahakarnagar@nammafix.gov.in"
     }
+  },
+  {
+    "id": "DEF-2026-1031",
+    "ticket_code": "NF-VEH-1031",
+    "type": "pothole",
+    "category_label": "Vehicle-Detected Severe Crater",
+    "title": "Severe Pothole scanned by Patrol Car 03 @ 44 km/h",
+    "description": "YOLOv8 mobile sweep identified 14cm road defect on Indiranagar 100ft Road. Assigned to Indiranagar Sub-Division Er. Deepa Nair. Fully excavated and compacted.",
+    "severity": "CRITICAL",
+    "severity_score": 93,
+    "confidence_pct": 98.4,
+    "dimensions": {
+      "width_cm": 62,
+      "length_cm": 70,
+      "depth_cm": 14
+    },
+    "location": {
+      "lat": 12.9721,
+      "lng": 77.6415,
+      "address": "Indiranagar 100ft Road near 12th Main Junction",
+      "ward_no": 80,
+      "ward_name": "Indiranagar",
+      "zone": "East"
+    },
+    "traffic_congestion_tier": "CRITICAL",
+    "road_age_years": 9,
+    "is_road_overdue": true,
+    "climate_volatility_score": 82,
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 94,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "/images/pothole_before.jpg",
+    "after_image_url": "/images/pothole_after.jpg",
+    "created_at": "2026-10-29T10:15:00Z",
+    "status": "Resolved",
+    "workflow_stage": "RESOLVED_VERIFIED",
+    "head_admin_approved": true,
+    "duration_took_str": "14 hours",
+    "repair_notes": "Cavity milled to 50mm depth, tack-coat applied, dense bituminous macadam compacted flush with road level.",
+    "assigned_subdivision": {
+      "id": "subdiv-east-01",
+      "name": "Indiranagar Sub-Division",
+      "corporation": "East",
+      "engineer": "Er. Deepa Nair",
+      "email": "subdiv.indiranagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1032",
+    "ticket_code": "NF-VEH-1032",
+    "type": "pothole",
+    "category_label": "Asphalt Subsidence & Road Dip",
+    "title": "Road Dip scanned by Patrol Car 08 @ 48 km/h",
+    "description": "Mobile LiDAR sweep detected 8cm road surface bump and subsidence on Koramangala 80ft Road. Assigned to Koramangala Sub-Division Er. Ajay Prasad.",
+    "severity": "MEDIUM",
+    "severity_score": 74,
+    "confidence_pct": 95.8,
+    "dimensions": {
+      "width_cm": 52,
+      "length_cm": 58,
+      "depth_cm": 8
+    },
+    "location": {
+      "lat": 12.9344,
+      "lng": 77.6225,
+      "address": "Koramangala 80ft Road, 4th Block Arterial Corridor",
+      "ward_no": 151,
+      "ward_name": "Koramangala",
+      "zone": "South"
+    },
+    "traffic_congestion_tier": "HIGH",
+    "road_age_years": 8,
+    "is_road_overdue": false,
+    "climate_volatility_score": 75,
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 72,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "/images/pothole_before.jpg",
+    "after_image_url": "/images/pothole_after.jpg",
+    "created_at": "2026-10-29T14:30:00Z",
+    "status": "Resolved",
+    "workflow_stage": "RESOLVED_VERIFIED",
+    "head_admin_approved": true,
+    "duration_took_str": "22 hours",
+    "repair_notes": "Asphalt depression leveled using hot-mix asphalt concrete, edges sealed with bituminous emulsion.",
+    "assigned_subdivision": {
+      "id": "subdiv-south-01",
+      "name": "Koramangala Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. Ajay Prasad",
+      "email": "subdiv.koramangala@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1033",
+    "ticket_code": "NF-VEH-1033",
+    "type": "road_crack",
+    "category_label": "Surface Wear & Micro-Crack",
+    "title": "Surface Raveling scanned by Patrol Car 06 @ 88 km/h",
+    "description": "High speed bumper camera detected 4cm surface raveling on Hebbal Airport Expressway. Assigned to Hebbal Sub-Division Er. Vikram Rao. Sealed with bituminous tack-coat.",
+    "severity": "LOW",
+    "severity_score": 48,
+    "confidence_pct": 94.1,
+    "dimensions": {
+      "width_cm": 35,
+      "length_cm": 45,
+      "depth_cm": 4
+    },
+    "location": {
+      "lat": 13.0362,
+      "lng": 77.5968,
+      "address": "Hebbal Flyover Expressway Approach Corridor",
+      "ward_no": 7,
+      "ward_name": "Hebbal",
+      "zone": "North"
+    },
+    "traffic_congestion_tier": "MODERATE",
+    "road_age_years": 5,
+    "is_road_overdue": false,
+    "climate_volatility_score": 68,
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 46,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "/images/pothole_before.jpg",
+    "after_image_url": "/images/pothole_after.jpg",
+    "created_at": "2026-10-29T18:00:00Z",
+    "status": "Resolved",
+    "workflow_stage": "RESOLVED_VERIFIED",
+    "head_admin_approved": true,
+    "duration_took_str": "9 hours",
+    "repair_notes": "Bituminous slurry seal applied over raveling surface. Sealed against water infiltration.",
+    "assigned_subdivision": {
+      "id": "subdiv-north-01",
+      "name": "Hebbal Sub-Division",
+      "corporation": "North",
+      "engineer": "Er. Vikram Rao",
+      "email": "subdiv.hebbal@nammafix.gov.in"
+    }
   }
 ]

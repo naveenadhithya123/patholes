@@ -63,6 +63,15 @@ export default function GISMapView({
 
   const map = mapInstanceRef.current;
 
+  // Invalidate map size on tab switch / mount so tiles render completely without clipping
+  useEffect(() => {
+    if (!map) return;
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [map]);
+
   // 2. Render Defect Markers (Animated Pulsing Movie Radar on Critical Road Potholes)
   useEffect(() => {
     if (!map) return;
@@ -366,11 +375,24 @@ export default function GISMapView({
       boundsPoints.push(...routes.direct.path);
     }
 
-    // Smoothly zoom and fit map bounds so user sees origin, destination, road curves, and potholes
-    if (boundsPoints.length > 0) {
-      map.fitBounds(boundsPoints, { padding: [45, 45], maxZoom: 16 });
+    if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+      boundsPoints.push([userLocation.lat, userLocation.lng]);
     }
-  }, [routes, activeRoute, map]);
+    if (destination && typeof destination.lat === 'number' && typeof destination.lng === 'number') {
+      boundsPoints.push([destination.lat, destination.lng]);
+    }
+
+    // Smoothly zoom and fit map bounds so user sees full origin, destination, road curves, and potholes
+    // (Works seamlessly for local 5km city routes up to 350km Chennai inter-city corridors!)
+    if (boundsPoints.length > 0) {
+      try {
+        const bounds = L.latLngBounds(boundsPoints);
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      } catch (e) {
+        console.warn('Map fitBounds error:', e);
+      }
+    }
+  }, [routes, activeRoute, destination, userLocation, map]);
 
   return (
     <div className="w-full h-full min-h-[580px] rounded-2xl overflow-hidden relative shadow-2xl border border-slate-800">

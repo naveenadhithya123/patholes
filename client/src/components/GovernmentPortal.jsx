@@ -30,8 +30,8 @@ export default function GovernmentPortal({
     );
   }
 
-  // 2. If logged in as Area Head, render the Area Head Workspace
-  if (govUser.role === 'AREA_HEAD') {
+  // 2. If logged in as Sub-Division Area Head (any of the 50 Sub-Divisions), render the Area Head Workspace
+  if (govUser.role === 'AREA_HEAD' || govUser.role === 'SUBDIVISION_HEAD' || govUser.subdivision_id) {
     return (
       <AreaHeadDashboard
         govUser={govUser}

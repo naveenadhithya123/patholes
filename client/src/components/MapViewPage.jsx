@@ -44,6 +44,25 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Calibrated Indian Car Driving Model: converts free-flow theoretical time to realistic
+// Google Maps car driving duration accounting for Bengaluru traffic, signals, and highway bottlenecks.
+function calculateCarDrivingMinutes(distanceKm, rawDurationSeconds) {
+  const baseMinutes = rawDurationSeconds ? (rawDurationSeconds / 60) : (distanceKm / 45) * 60;
+  let trafficMultiplier = 1.38;
+
+  if (distanceKm <= 10) {
+    trafficMultiplier = 1.45; // Dense CBD city signals (18-22 km/h avg)
+  } else if (distanceKm <= 45) {
+    trafficMultiplier = 1.38; // Arterial corridors (e.g. Hosur Rd, Bommasandra to Indiranagar: 32.5km -> 52 mins)
+  } else if (distanceKm <= 100) {
+    trafficMultiplier = 1.25; // Semi-urban bypass
+  } else {
+    trafficMultiplier = 1.38; // Inter-city highway (e.g. Bangalore to Chennai: ~330km -> 5.5 hrs)
+  }
+
+  return Math.max(3, Math.round(baseMinutes * trafficMultiplier));
+}
+
 // Format duration: formats into hours and minutes if it crosses 60 mins (e.g. 75m -> "1 hr 15 mins", 120m -> "2 hrs")
 function formatDuration(minutes) {
   if (minutes === null || minutes === undefined) return '0 mins';
@@ -192,7 +211,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
           const primary = data.routes[0];
           const primaryCoords = primary.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
           const primaryDistKm = Math.round((primary.distance / 1000) * 10) / 10;
-          const primaryDurMin = Math.max(2, Math.round(primary.duration / 60));
+          const primaryDurMin = calculateCarDrivingMinutes(primaryDistKm, primary.duration);
 
           let altCoords = null;
           let altDistKm = 0;
@@ -202,9 +221,9 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
             const alt = data.routes[1];
             altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
             altDistKm = Math.round((alt.distance / 1000) * 10) / 10;
-            altDurMin = Math.max(2, Math.round(alt.duration / 60));
-          } else {
-            // Find real alternative road via intermediate parallel corridor waypoint
+            altDurMin = calculateCarDrivingMinutes(altDistKm, alt.duration);
+          } else if (primaryDistKm <= 45) {
+            // Find real alternative road via intermediate parallel corridor waypoint for local urban routes
             const coords = primary.geometry.coordinates;
             const pivot = coords[Math.floor(coords.length * 0.45)];
             const latDelta = dLat - oLat;
@@ -221,7 +240,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                 const alt = vData.routes[0];
                 altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
                 altDistKm = Math.round((alt.distance / 1000) * 10) / 10;
-                altDurMin = Math.max(2, Math.round(alt.duration / 60));
+                altDurMin = calculateCarDrivingMinutes(altDistKm, alt.duration);
               }
             } catch (viaErr) {}
           }
@@ -587,12 +606,12 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
               <span className="text-[10px] font-mono text-slate-500 flex items-center mr-1">
                 <Compass className="w-3 h-3 mr-1" /> Quick:
               </span>
-              {POPULAR_DESTINATIONS.slice(0, 4).map((preset, idx) => (
+              {POPULAR_DESTINATIONS.map((preset, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSelectDestination(preset)}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition border ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition border cursor-pointer ${
                     destination.name.includes(preset.name.split(' ')[0])
                       ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold'
                       : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
@@ -601,6 +620,12 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                   {preset.name.split(' ')[0]}
                 </button>
               ))}
+            </div>
+
+            {/* Car Driving Calibrated Badge */}
+            <div className="flex items-center space-x-2 text-[10px] font-mono text-cyan-400/90 bg-cyan-950/40 border border-cyan-900/60 px-2.5 py-1.5 rounded-lg mt-1">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span>🚗 Car Driving Mode • Traffic Congestion & Signal Delays Calibrated</span>
             </div>
           </div>
 

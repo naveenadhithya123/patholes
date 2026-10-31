@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldAlert, Activity, Award, LogOut, Home, Layers, Lock, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Activity, Award, LogOut, Home, Layers, Lock, CheckCircle2, Car } from 'lucide-react';
 
 export default function Navbar({ currentView, onSelectView, govUser, onLogout, isLoginPage, onNavigate }) {
   return (
@@ -54,6 +54,20 @@ export default function Navbar({ currentView, onSelectView, govUser, onLogout, i
                   <span className="hidden sm:inline">Main Dashboard</span>
                 </button>
               )}
+
+              {/* Car AI Fleet Tracking Button */}
+              <button
+                type="button"
+                onClick={() => onSelectView('car_tracking')}
+                className={`flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer border ${
+                  currentView === 'car_tracking'
+                    ? 'bg-blue-600 text-white border-blue-400 shadow-blue-600/25'
+                    : 'bg-blue-950/40 hover:bg-blue-900/50 text-blue-300 border-blue-500/40'
+                }`}
+              >
+                <Car className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Car Tracking</span>
+              </button>
 
               {/* Public Issues Tracker Button */}
               <button

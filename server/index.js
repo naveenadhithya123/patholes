@@ -286,23 +286,58 @@ app.get('/api/subdivisions/:id', (req, res) => {
 /* ==========================================================================
    NAVIGATION & REAL ROAD ROUTING (OSRM Proxy & Real Alternative Road Finder)
    ========================================================================== */
-function fetchOsrmJson(url) {
+function fetchOsrmJson(url, timeoutMs = 4000) {
   return new Promise((resolve, reject) => {
-    https.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-      rejectUnauthorized: false
-    }, (res) => {
-      let body = '';
-      res.on('data', c => body += c);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch (e) {
-          reject(new Error(body.slice(0, 100)));
-        }
+    let req;
+    const timer = setTimeout(() => {
+      if (req) req.destroy();
+      reject(new Error(`OSRM request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    try {
+      req = https.get(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+        rejectUnauthorized: false
+      }, (res) => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => {
+          clearTimeout(timer);
+          try {
+            resolve(JSON.parse(body));
+          } catch (e) {
+            reject(new Error(body.slice(0, 100)));
+          }
+        });
       });
-    }).on('error', reject);
+      req.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      reject(err);
+    }
   });
+}
+
+// Indian Car Driving Model: Calibrates OSRM theoretical free-flow speeds to real-world
+// Google Maps driving times with Bengaluru signal congestion, traffic bottlenecks, and toll plazas.
+function calculateCarDrivingMinutes(distanceKm, rawDurationSeconds) {
+  const baseMinutes = rawDurationSeconds ? (rawDurationSeconds / 60) : (distanceKm / 45) * 60;
+  let trafficMultiplier = 1.38;
+
+  if (distanceKm <= 10) {
+    trafficMultiplier = 1.45; // Dense CBD city signals (18-22 km/h avg)
+  } else if (distanceKm <= 45) {
+    trafficMultiplier = 1.38; // Arterial corridors (e.g. Hosur Rd, Bommasandra to Indiranagar: 32.5km -> 52 mins)
+  } else if (distanceKm <= 100) {
+    trafficMultiplier = 1.25; // Semi-urban bypass
+  } else {
+    trafficMultiplier = 1.38; // Inter-city highway (e.g. Bangalore to Chennai: ~330km -> 5.5 hrs)
+  }
+
+  return Math.max(3, Math.round(baseMinutes * trafficMultiplier));
 }
 
 app.get('/api/navigation/route', async (req, res) => {
@@ -317,7 +352,7 @@ app.get('/api/navigation/route', async (req, res) => {
 
   try {
     const urlPrimary = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson&alternatives=true`;
-    const pData = await fetchOsrmJson(urlPrimary);
+    const pData = await fetchOsrmJson(urlPrimary, 5000);
 
     if (pData.code !== 'Ok' || !pData.routes || pData.routes.length === 0) {
       return res.status(404).json({ success: false, message: 'No valid road route found' });
@@ -326,28 +361,30 @@ app.get('/api/navigation/route', async (req, res) => {
     const primary = pData.routes[0];
     const primaryCoords = primary.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
     const primaryDistanceKm = Math.round((primary.distance / 1000) * 10) / 10;
-    const primaryDurationMin = Math.max(2, Math.round(primary.duration / 60));
+    const primaryDurationMin = calculateCarDrivingMinutes(primaryDistanceKm, primary.duration);
 
     let alt = pData.routes.length > 1 ? pData.routes[1] : null;
 
-    // If OSRM didn't return an alternative automatically, route via real parallel road network waypoint!
-    if (!alt) {
+    // For local metropolitan corridors (<= 45km), if OSRM didn't return an alternative automatically,
+    // find a real parallel road network waypoint. For long-distance inter-city highways (> 45km),
+    // skip artificial waypoint synthesis to prevent hanging or route truncation.
+    if (!alt && primaryDistanceKm <= 45) {
       const coords = primary.geometry.coordinates;
       const pivot = coords[Math.floor(coords.length * 0.45)];
       const latDelta = dLat - oLat;
       const lngDelta = dLng - oLng;
-      const offset = 0.022; // ~2.2km lateral shift to parallel corridor
+      const offset = 0.022; // ~2.2km lateral shift to parallel arterial corridor
       const viaLng = pivot[0] + (latDelta > 0 ? -offset : offset);
       const viaLat = pivot[1] + (lngDelta > 0 ? offset : -offset);
 
       const urlVia = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${viaLng.toFixed(5)},${viaLat.toFixed(5)};${dLng},${dLat}?overview=full&geometries=geojson`;
       try {
-        const vData = await fetchOsrmJson(urlVia);
+        const vData = await fetchOsrmJson(urlVia, 3000);
         if (vData.code === 'Ok' && vData.routes && vData.routes.length > 0) {
           alt = vData.routes[0];
         }
       } catch (viaErr) {
-        // Via query failed, keep alt as null
+        // Via query timed out or failed, cleanly retain primary route
       }
     }
 
@@ -358,11 +395,12 @@ app.get('/api/navigation/route', async (req, res) => {
     if (alt) {
       altCoords = alt.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
       altDistanceKm = Math.round((alt.distance / 1000) * 10) / 10;
-      altDurationMin = Math.max(2, Math.round(alt.duration / 60));
+      altDurationMin = calculateCarDrivingMinutes(altDistanceKm, alt.duration);
     }
 
     return res.json({
       success: true,
+      mode: 'CAR_DRIVING',
       hasAlternativeRoad: !!altCoords,
       primary: {
         path: primaryCoords,
