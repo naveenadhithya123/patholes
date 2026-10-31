@@ -15,7 +15,8 @@ import {
   Info,
   Layers,
   Filter,
-  Zap
+  Zap,
+  ArrowUpDown
 } from 'lucide-react';
 import GISMapView from './GISMapView';
 
@@ -89,35 +90,41 @@ function formatDuration(minutes) {
 }
 
 export default function MapViewPage({ onBack, defects = [], roads = [] }) {
-  // 1. Live GPS State (Origin)
-  const [userLocation, setUserLocation] = useState({
+  // 1. Dual Location States: From (Origin) & To (Destination)
+  const [origin, setOrigin] = useState({
     lat: 12.9177,
     lng: 77.6238,
-    name: 'Silk Board Hub (Default Origin)',
-    acquired: false,
+    name: 'Silk Board Hub (Bengaluru)',
     isRealGPS: false
   });
+  const [originQuery, setOriginQuery] = useState('Silk Board Hub (Bengaluru)');
+  const [originResults, setOriginResults] = useState([]);
+  const [isSearchingOrigin, setIsSearchingOrigin] = useState(false);
+  const [showOriginDropdown, setShowOriginDropdown] = useState(false);
+  const originInputRef = useRef(null);
+
   const [isLocating, setIsLocating] = useState(false);
 
   // 2. Destination State
   const [destination, setDestination] = useState(POPULAR_DESTINATIONS[2]); // Default to Indiranagar
-
-  // 3. Search Bar State
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(POPULAR_DESTINATIONS[2].name);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchInputRef = useRef(null);
 
-  // 4. Active Selected Route: 'direct' or 'safe'
+  // 3. Map Click Target: 'destination' | 'origin'
+  const [mapPinTarget, setMapPinTarget] = useState('destination');
+
+  // 4. Active Selected Route: 'direct', 'shortest', or 'safe'
   const [activeRoute, setActiveRoute] = useState('direct');
 
-  // 6. Real Road Network Coordinates (from OSRM Driving Engine)
+  // 5. Real Road Network Coordinates (from OSRM Driving Engine)
   const [routingData, setRoutingData] = useState(null);
   const [isRouting, setIsRouting] = useState(false);
 
-  // Request Device Live GPS
-  const handleLocateMe = () => {
+  // Activate / Switch to Device Live GPS as Origin
+  const handleUseLiveGPSAsOrigin = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
@@ -131,50 +138,55 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
         const liveLng = pos.coords.longitude;
         const acc = Math.round(pos.coords.accuracy);
 
-        setUserLocation({
+        setOrigin({
           lat: liveLat,
           lng: liveLng,
-          name: `My Live GPS (±${acc}m)`,
-          acquired: true,
+          name: `Your Location (Live GPS ±${acc}m)`,
           isRealGPS: true
         });
+        setOriginQuery('Your Location (Live GPS)');
+        setShowOriginDropdown(false);
       },
       (err) => {
         setIsLocating(false);
-        alert('Could not acquire live location: ' + err.message + '. Retaining current location.');
+        alert('Could not acquire live location: ' + err.message + '. You can type any custom location.');
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
-  // Automatically query device live GPS on initial mount
-  useEffect(() => {
-    if (navigator.geolocation && !userLocation.acquired) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            name: `My Live GPS Location (±${Math.round(pos.coords.accuracy)}m)`,
-            acquired: true,
-            isRealGPS: true
-          });
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
-      );
-    }
-  }, []);
+  // Swap From (Origin) and To (Destination)
+  const handleSwapLocations = () => {
+    const prevOrigin = { ...origin };
+    const prevDest = { ...destination };
+    const prevOriginQuery = originQuery;
+    const prevDestQuery = searchQuery;
+
+    setOrigin({
+      lat: prevDest.lat,
+      lng: prevDest.lng,
+      name: prevDest.name,
+      isRealGPS: false
+    });
+    setOriginQuery(prevDest.name);
+
+    setDestination({
+      lat: prevOrigin.lat,
+      lng: prevOrigin.lng,
+      name: prevOrigin.name
+    });
+    setSearchQuery(prevOriginQuery);
+  };
 
   // Fetch Real Road Coordinates from OSRM Driving Machine (Zero straight lines, follows actual roads!)
   useEffect(() => {
-    if (!userLocation || !destination) return;
+    if (!origin || !destination) return;
 
     let isMounted = true;
     setIsRouting(true);
 
-    const oLat = userLocation.lat;
-    const oLng = userLocation.lng;
+    const oLat = origin.lat;
+    const oLng = origin.lng;
     const dLat = destination.lat;
     const dLng = destination.lng;
 
@@ -275,9 +287,79 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     return () => {
       isMounted = false;
     };
-  }, [userLocation.lat, userLocation.lng, destination.lat, destination.lng]);
+  }, [origin.lat, origin.lng, destination.lat, destination.lng]);
 
-  // Debounced Place Geocoding Search (OpenStreetMap Nominatim + Fallbacks)
+  // Debounced Origin Geocoding Search (Allows user to type ANY place as From/Origin)
+  useEffect(() => {
+    const trimmed = originQuery.trim();
+    if (trimmed.length < 2 || trimmed.startsWith('Your Location')) {
+      setOriginResults([]);
+      setShowOriginDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingOrigin(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=6&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setOriginResults(data);
+          setShowOriginDropdown(true);
+        } else {
+          const localMatches = POPULAR_DESTINATIONS.filter(
+            (p) =>
+              p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+              p.description.toLowerCase().includes(trimmed.toLowerCase())
+          ).map((p) => ({
+            display_name: `${p.name}, ${p.description}`,
+            lat: p.lat.toString(),
+            lon: p.lng.toString()
+          }));
+          setOriginResults(localMatches);
+          setShowOriginDropdown(localMatches.length > 0);
+        }
+      } catch (err) {
+        const localMatches = POPULAR_DESTINATIONS.filter(
+          (p) =>
+            p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+            p.description.toLowerCase().includes(trimmed.toLowerCase())
+        ).map((p) => ({
+          display_name: `${p.name}, ${p.description}`,
+          lat: p.lat.toString(),
+          lon: p.lng.toString()
+        }));
+        setOriginResults(localMatches);
+        setShowOriginDropdown(localMatches.length > 0);
+      } finally {
+        setIsSearchingOrigin(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [originQuery]);
+
+  const handleSelectOrigin = (item) => {
+    let name = item.name;
+    let lat = item.lat;
+    let lng = item.lng || item.lon;
+
+    if (item.display_name) {
+      const parts = item.display_name.split(',');
+      name = parts.slice(0, 2).join(', ').trim();
+      lat = parseFloat(item.lat);
+      lng = parseFloat(item.lon);
+    }
+
+    setOrigin({ name, lat, lng, isRealGPS: false });
+    setOriginQuery(name);
+    setShowOriginDropdown(false);
+  };
+
+  // Debounced Destination Geocoding Search (OpenStreetMap Nominatim + Fallbacks)
   useEffect(() => {
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
@@ -350,11 +432,14 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     setShowDropdown(false);
   };
 
-  // Close search dropdown on click outside
+  // Close search dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchInputRef.current && !searchInputRef.current.contains(e.target)) {
         setShowDropdown(false);
+      }
+      if (originInputRef.current && !originInputRef.current.contains(e.target)) {
+        setShowOriginDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -565,12 +650,12 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
         {/* Locate Me GPS Button */}
         <button
           type="button"
-          onClick={handleLocateMe}
+          onClick={handleUseLiveGPSAsOrigin}
           disabled={isLocating}
           className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center space-x-2 transition shadow-sm"
         >
           <Crosshair className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} />
-          <span>{isLocating ? 'Locking Satellite GPS...' : '📍 Use My Live Device GPS'}</span>
+          <span>{isLocating ? 'Locking Satellite GPS...' : '📍 Use My Live GPS as Origin'}</span>
         </button>
       </div>
 
@@ -578,23 +663,137 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
       <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-4 shadow-xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          {/* Left Column: Origin & Real Place Search Bar */}
-          <div className="lg:col-span-5 space-y-3">
-            {/* Origin View (Blinking GPS beacon status) */}
-            <div className="flex items-center space-x-2.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs">
-              <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse flex-shrink-0"></span>
-              <div className="flex-1 truncate">
-                <span className="text-slate-400 text-[10px] block uppercase font-mono font-bold">
-                  Origin (Live GPS):
-                </span>
-                <span className="text-white font-semibold">{userLocation.name}</span>
+          {/* Left Column: Origin (From) & Destination (To) Dual Google Maps Controls */}
+          <div className="lg:col-span-5 space-y-2.5">
+            {/* 1. Origin (FROM) Input with Live GPS Button */}
+            <div ref={originInputRef} className="relative">
+              <div className="flex items-center space-x-2 bg-slate-950 px-3 py-2.5 rounded-xl border border-slate-800 focus-within:border-emerald-500/80 transition-all text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse" title="Origin (From)" />
+                <span className="text-[10px] font-bold text-slate-400 font-mono uppercase shrink-0">From:</span>
+                <input
+                  type="text"
+                  value={originQuery}
+                  onChange={(e) => {
+                    setOriginQuery(e.target.value);
+                    if (e.target.value.length >= 2) setShowOriginDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (originResults.length > 0) setShowOriginDropdown(true);
+                  }}
+                  placeholder="Type any place or use Live GPS..."
+                  className="w-full bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none text-xs truncate"
+                />
+                {originQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOriginQuery('');
+                      setOriginResults([]);
+                      setShowOriginDropdown(false);
+                    }}
+                    className="text-slate-500 hover:text-slate-300 p-0.5"
+                    title="Clear Origin"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {/* 1-Click Live GPS Button */}
+                <button
+                  type="button"
+                  onClick={handleUseLiveGPSAsOrigin}
+                  disabled={isLocating}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center space-x-1 shrink-0 transition border ${
+                    origin.isRealGPS
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800'
+                  }`}
+                  title="Use Device Real GPS as Origin"
+                >
+                  <Crosshair className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
+                  <span>{isLocating ? 'Locking...' : 'Live GPS'}</span>
+                </button>
               </div>
+
+              {/* Floating Origin Search Results Dropdown */}
+              {showOriginDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-[2000] overflow-hidden max-h-60 overflow-y-auto">
+                  {/* Option: Use Live GPS */}
+                  <button
+                    type="button"
+                    onClick={handleUseLiveGPSAsOrigin}
+                    className="w-full text-left px-3 py-2 bg-emerald-950/30 hover:bg-emerald-900/40 transition flex items-center space-x-2 border-b border-slate-800/80 text-xs"
+                  >
+                    <Crosshair className="w-4 h-4 text-emerald-400 flex-shrink-0 animate-pulse" />
+                    <div className="flex-1 truncate">
+                      <div className="text-emerald-300 font-bold truncate">📍 Use My Live Device GPS</div>
+                      <div className="text-[10px] text-emerald-400/80">Query your phone or laptop live location</div>
+                    </div>
+                  </button>
+
+                  <div className="px-3 py-1 text-[10px] font-mono text-slate-400 border-b border-slate-800/80 bg-slate-900/50 flex items-center justify-between">
+                    <span>Suggested Places</span>
+                    <span>Click to set Origin</span>
+                  </div>
+
+                  {originResults.length > 0 ? (
+                    originResults.map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectOrigin(item)}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-900 transition flex items-start space-x-2 border-b border-slate-900/40 text-xs"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 truncate">
+                          <div className="text-white font-semibold truncate">
+                            {item.display_name.split(',')[0]}
+                          </div>
+                          <div className="text-[11px] text-slate-400 truncate">
+                            {item.display_name}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    POPULAR_DESTINATIONS.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectOrigin(preset)}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-900 transition flex items-start space-x-2 border-b border-slate-900/40 text-xs"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 truncate">
+                          <div className="text-white font-semibold truncate">{preset.name}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{preset.description}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Google Maps-Style Destination Search Bar */}
+            {/* Swap Button (↕️ Swap Origin and Destination) */}
+            <div className="flex items-center justify-between px-2">
+              <div className="h-px bg-slate-800 flex-1" />
+              <button
+                type="button"
+                onClick={handleSwapLocations}
+                className="mx-3 px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-bold flex items-center space-x-1.5 transition shadow-sm"
+                title="Swap Origin and Destination"
+              >
+                <ArrowUpDown className="w-3 h-3 text-cyan-400" />
+                <span>Swap From & To</span>
+              </button>
+              <div className="h-px bg-slate-800 flex-1" />
+            </div>
+
+            {/* 2. Destination (TO) Input */}
             <div ref={searchInputRef} className="relative">
-              <div className="flex items-center space-x-2 bg-slate-950 px-3 py-2.5 rounded-xl border border-slate-800 focus-within:border-cyan-500/80 transition-all text-xs">
-                <Search className={`w-4 h-4 ${isSearching ? 'text-cyan-400 animate-spin' : 'text-slate-400'}`} />
+              <div className="flex items-center space-x-2 bg-slate-950 px-3 py-2.5 rounded-xl border border-slate-800 focus-within:border-rose-500/80 transition-all text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0" title="Destination (To)" />
+                <span className="text-[10px] font-bold text-slate-400 font-mono uppercase shrink-0">To:</span>
                 <input
                   type="text"
                   value={searchQuery}
@@ -602,8 +801,8 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                   onFocus={() => {
                     if (searchResults.length > 0) setShowDropdown(true);
                   }}
-                  placeholder="Search any place or city (e.g. Nellai, MG Road)..."
-                  className="w-full bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none text-xs"
+                  placeholder="Search destination place or city..."
+                  className="w-full bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none text-xs truncate"
                 />
                 {searchQuery && (
                   <button
@@ -614,6 +813,7 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                       setShowDropdown(false);
                     }}
                     className="text-slate-500 hover:text-slate-300 p-0.5"
+                    title="Clear Destination"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -646,6 +846,44 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Map Click Target Selector & Quick Suggestions */}
+            <div className="flex items-center justify-between pt-0.5 text-[10px] font-mono text-slate-400">
+              <span className="flex items-center space-x-1.5">
+                <span>Map Click Sets:</span>
+                <button
+                  type="button"
+                  onClick={() => setMapPinTarget('origin')}
+                  className={`px-1.5 py-0.5 rounded border transition cursor-pointer ${
+                    mapPinTarget === 'origin'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold'
+                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
+                  }`}
+                >
+                  🟢 From
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapPinTarget('destination')}
+                  className={`px-1.5 py-0.5 rounded border transition cursor-pointer ${
+                    mapPinTarget === 'destination'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-bold'
+                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'
+                  }`}
+                >
+                  🔴 To
+                </button>
+              </span>
+
+              {origin.isRealGPS ? (
+                <span className="text-emerald-400 flex items-center space-x-1 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>GPS Active</span>
+                </span>
+              ) : (
+                <span className="text-cyan-400 font-mono">Custom From</span>
               )}
             </div>
 
@@ -948,13 +1186,23 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-2">
         <GISMapView
           defects={displayedDefects}
-          userLocation={userLocation}
+          userLocation={origin}
           destination={destination}
           activeRoute={activeRoute}
           routes={calculatedRoutes}
           onMapClick={(pinned) => {
-            setDestination(pinned);
-            setSearchQuery(pinned.name);
+            if (mapPinTarget === 'origin') {
+              setOrigin({
+                name: pinned.name,
+                lat: pinned.lat,
+                lng: pinned.lng,
+                isRealGPS: false
+              });
+              setOriginQuery(pinned.name);
+            } else {
+              setDestination(pinned);
+              setSearchQuery(pinned.name);
+            }
           }}
           onSelectRoute={(r) => setActiveRoute(r)}
         />
