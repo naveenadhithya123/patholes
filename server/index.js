@@ -30,8 +30,8 @@ if (supabaseService.isSupabaseActive()) {
   supabaseService.fetchDefectsFromDb().then(dbDefects => {
     if (dbDefects && dbDefects.length > 0) {
       console.log(`📥 Loaded ${dbDefects.length} defects from Supabase Cloud Database.`);
-      const dbIds = new Set(dbDefects.map(d => d.id));
-      defectsData = [...dbDefects, ...defectsData.filter(d => !dbIds.has(d.id))];
+      const dbCodes = new Set(dbDefects.map(d => d.ticket_code || d.id));
+      defectsData = [...dbDefects, ...defectsData.filter(d => !dbCodes.has(d.ticket_code) && !dbCodes.has(d.id))];
     }
   }).catch(err => {
     console.warn('Supabase initial sync note (using seed fallback):', err.message);

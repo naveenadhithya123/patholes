@@ -20,15 +20,24 @@ import {
 } from 'lucide-react';
 import GISMapView from './GISMapView';
 
-// Quick Destination Suggestions for Instant 1-Click Search Testing
+// Quick Destination Suggestions for Instant 1-Click Search Testing & Fast Routing
 const POPULAR_DESTINATIONS = [
-  { name: 'Tirunelveli Town (Nellai)', lat: 8.7289, lng: 77.6895, description: 'Nellai Municipal Corridor, Tamil Nadu' },
+  { name: 'Indiranagar 100ft Road', lat: 12.9721, lng: 77.6415, description: 'Commercial & Metro Transit Route, Bengaluru' },
   { name: 'Silk Board Interchange Hub', lat: 12.9177, lng: 77.6238, description: 'Major South Bengaluru Transit Junction' },
-  { name: 'Indiranagar 100ft Road', lat: 12.9721, lng: 77.6415, description: 'Commercial & Metro Transit Route' },
-  { name: 'Whitefield ITPL Tech Corridor', lat: 12.9832, lng: 77.7441, description: 'Major IT & Industrial Hub' },
-  { name: 'Koramangala 80ft Arterial Road', lat: 12.9312, lng: 77.6302, description: 'Mixed Residential & Tech Corridor' },
-  { name: 'Chennai Central Railway Corridor', lat: 13.0827, lng: 80.2707, description: 'Central Railway Transit Hub, Chennai' },
-  { name: 'MG Road Central Metro Hub', lat: 12.9756, lng: 77.6066, description: 'Central Business District' }
+  { name: 'Whitefield ITPL Tech Corridor', lat: 12.9832, lng: 77.7441, description: 'Major IT & Industrial Hub, Bengaluru' },
+  { name: 'Bellandur Eco-Space Outer Ring Road', lat: 12.9268, lng: 77.6852, description: 'High-Density IT Corridor, Bellandur' },
+  { name: 'Hebbal Flyover & Airport Expressway', lat: 13.0375, lng: 77.5925, description: 'North Bengaluru Airport Approach' },
+  { name: 'Koramangala Sony World Signal', lat: 12.9344, lng: 77.6275, description: '80ft Road Arterial Corridor, 4th Block' },
+  { name: 'MG Road Central Metro Hub', lat: 12.9756, lng: 77.6066, description: 'Central Business District, Bengaluru' },
+  { name: 'Electronic City Phase 1 Toll', lat: 12.8491, lng: 77.6624, description: 'Hosur Road Elevated Expressway' },
+  { name: 'Marathahalli Multiplex Bridge', lat: 12.9562, lng: 77.7011, description: 'Outer Ring Road Interchange, Mahadevapura' },
+  { name: 'Tin Factory KR Puram Junction', lat: 12.9984, lng: 77.6712, description: 'Old Madras Road Major Bottleneck' },
+  { name: 'Bannerghatta Road Meenakshi Mall', lat: 12.8765, lng: 77.5948, description: 'South Arterial Highway Corridor, Hulimavu' },
+  { name: 'BTM Layout Udupi Garden 100ft Rd', lat: 12.9168, lng: 77.6102, description: 'South Ring Road Connecting Jayadeva' },
+  { name: 'Peenya Tumkur Road Industrial Hub', lat: 13.0289, lng: 77.5401, description: 'Goraguntepalya Flyover Junction' },
+  { name: 'Jayanagar 4th Block Complex', lat: 12.9298, lng: 77.5833, description: 'Commercial Hub, South Bengaluru' },
+  { name: 'Tirunelveli Town (Nellai)', lat: 8.7289, lng: 77.6895, description: 'Nellai Municipal Corridor, Tamil Nadu' },
+  { name: 'Chennai Central Railway Corridor', lat: 13.0827, lng: 80.2707, description: 'Central Railway Transit Hub, Chennai' }
 ];
 
 // Helper: Haversine distance in kilometers
@@ -432,6 +441,110 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     setShowDropdown(false);
   };
 
+  // Instant Enter Search & Map Direction for Destination (To)
+  const executeDestinationSearch = async (queryText) => {
+    const trimmed = (queryText || searchQuery || '').trim();
+    if (!trimmed) return;
+
+    // 1. If dropdown already has matches, pick top result
+    if (searchResults && searchResults.length > 0) {
+      handleSelectDestination(searchResults[0]);
+      setShowDropdown(false);
+      return;
+    }
+
+    // 2. Instant local Bangalore hub match
+    const localMatch = POPULAR_DESTINATIONS.find(
+      (p) =>
+        p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+        p.description.toLowerCase().includes(trimmed.toLowerCase())
+    );
+    if (localMatch) {
+      handleSelectDestination(localMatch);
+      setShowDropdown(false);
+      return;
+    }
+
+    // 3. Instant Nominatim geocode lookup
+    try {
+      setIsSearching(true);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=1&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        handleSelectDestination(data[0]);
+      } else {
+        handleSelectDestination({
+          name: trimmed,
+          description: `Custom destination: ${trimmed}`,
+          lat: 12.9716,
+          lng: 77.5946
+        });
+      }
+    } catch (err) {
+      console.warn('Destination search error:', err);
+    } finally {
+      setIsSearching(false);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleDestinationKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeDestinationSearch(searchQuery);
+    }
+  };
+
+  // Instant Enter Search & Map Direction for Origin (From)
+  const executeOriginSearch = async (queryText) => {
+    const trimmed = (queryText || originQuery || '').trim();
+    if (!trimmed || trimmed.startsWith('Your Location')) return;
+
+    if (originResults && originResults.length > 0) {
+      handleSelectOrigin(originResults[0]);
+      setShowOriginDropdown(false);
+      return;
+    }
+
+    const localMatch = POPULAR_DESTINATIONS.find(
+      (p) =>
+        p.name.toLowerCase().includes(trimmed.toLowerCase()) ||
+        p.description.toLowerCase().includes(trimmed.toLowerCase())
+    );
+    if (localMatch) {
+      handleSelectOrigin(localMatch);
+      setShowOriginDropdown(false);
+      return;
+    }
+
+    try {
+      setIsSearchingOrigin(true);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=1&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        handleSelectOrigin(data[0]);
+      }
+    } catch (err) {
+      console.warn('Origin search error:', err);
+    } finally {
+      setIsSearchingOrigin(false);
+      setShowOriginDropdown(false);
+    }
+  };
+
+  const handleOriginKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeOriginSearch(originQuery);
+    }
+  };
+
   // Close search dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -677,10 +790,11 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     setOriginQuery(e.target.value);
                     if (e.target.value.length >= 2) setShowOriginDropdown(true);
                   }}
+                  onKeyDown={handleOriginKeyDown}
                   onFocus={() => {
                     if (originResults.length > 0) setShowOriginDropdown(true);
                   }}
-                  placeholder="Type any place or use Live GPS..."
+                  placeholder="Type any place or use Live GPS (Press Enter)..."
                   className="w-full bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none text-xs truncate"
                 />
                 {originQuery && (
@@ -697,6 +811,14 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => executeOriginSearch(originQuery)}
+                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px] border border-slate-700 shrink-0 transition"
+                  title="Press Enter to set origin"
+                >
+                  ↵
+                </button>
                 {/* 1-Click Live GPS Button */}
                 <button
                   type="button"
@@ -798,10 +920,11 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleDestinationKeyDown}
                   onFocus={() => {
                     if (searchResults.length > 0) setShowDropdown(true);
                   }}
-                  placeholder="Search destination place or city..."
+                  placeholder="Search destination place or city (Press Enter)..."
                   className="w-full bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none text-xs truncate"
                 />
                 {searchQuery && (
@@ -818,6 +941,15 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => executeDestinationSearch(searchQuery)}
+                  className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-[10px] flex items-center space-x-1 shrink-0 shadow transition cursor-pointer"
+                  title="Press Enter to direct route"
+                >
+                  <Navigation className="w-3 h-3" />
+                  <span>Go ↵</span>
+                </button>
               </div>
 
               {/* Floating Geocoding Search Results Dropdown */}

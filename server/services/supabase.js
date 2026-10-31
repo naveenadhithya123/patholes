@@ -51,7 +51,24 @@ async function fetchDefectsFromDb() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    if (!data) return [];
+
+    return data.map(d => ({
+      ...d,
+      location: d.location || {
+        lat: d.lat,
+        lng: d.lng,
+        address: d.address || `GPS: ${d.lat?.toFixed(5)}, ${d.lng?.toFixed(5)}`,
+        ward_no: d.ward_no,
+        ward_name: d.ward_name,
+        zone: d.zone
+      },
+      dimensions: d.dimensions || {
+        depth_cm: d.depth_cm || 10,
+        width_cm: d.width_cm || 45,
+        length_cm: d.length_cm || 50
+      }
+    }));
   } catch (err) {
     console.warn('Supabase fetch defects error:', err.message);
     return null;

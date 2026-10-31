@@ -89,12 +89,17 @@ export default function GISMapView({
     markersRef.current = [];
 
     defects.forEach(defect => {
-      if (!defect.location || typeof defect.location.lat !== 'number' || typeof defect.location.lng !== 'number') return;
+      const dLat = defect.location?.lat ?? defect.lat;
+      const dLng = defect.location?.lng ?? defect.lng;
+      if (typeof dLat !== 'number' || typeof dLng !== 'number') return;
 
       const sev = (defect.severity || 'CRITICAL').toUpperCase();
       const isCritical = sev === 'CRITICAL' || sev === 'SEVERE';
       const isMedium = sev === 'MEDIUM' || sev === 'MODERATE' || sev === 'HIGH';
       const isLow = sev === 'LOW' || sev === 'MINOR';
+
+      const verifCount = defect.verification_count || 1;
+      const dupCount = defect.duplicates_prevented || 0;
 
       // 3 Distinct Visual Markers for Critical, Medium, and Low
       let markerHtml = '';
@@ -106,6 +111,12 @@ export default function GISMapView({
       let alertBoxBorder = '#fecaca';
       let alertBoxText = '#b91c1c';
 
+      const crowdPill = verifCount > 1 ? `
+        <div style="position: absolute; top: -6px; right: -8px; background: #059669; color: #ffffff; font-size: 8px; font-weight: 900; padding: 1px 4px; border-radius: 9999px; border: 1.5px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.4); white-space: nowrap;">
+          👥${verifCount}
+        </div>
+      ` : '';
+
       if (isCritical) {
         markerHtml = `
           <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -114,6 +125,7 @@ export default function GISMapView({
             <div style="position: relative; width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 0 16px #ef4444; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 12px; font-weight: 900; font-family: monospace;">
               !
             </div>
+            ${crowdPill}
           </div>
         `;
         badgeBg = '#ffe4e6';
@@ -130,6 +142,7 @@ export default function GISMapView({
             <div style="position: relative; width: 20px; height: 20px; border-radius: 50%; background: #f59e0b; border: 2px solid #ffffff; box-shadow: 0 0 10px rgba(245, 158, 11, 0.7); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 900;">
               ▲
             </div>
+            ${crowdPill}
           </div>
         `;
         badgeBg = '#fef3c7';
@@ -147,6 +160,7 @@ export default function GISMapView({
             <div style="position: relative; width: 18px; height: 18px; border-radius: 50%; background: #059669; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 9px; font-weight: 900;">
               ●
             </div>
+            ${crowdPill}
           </div>
         `;
         badgeBg = '#d1fae5';
@@ -165,7 +179,7 @@ export default function GISMapView({
         iconAnchor: [18, 18]
       });
 
-      const marker = L.marker([defect.location.lat, defect.location.lng], { icon: customIcon }).addTo(map);
+      const marker = L.marker([dLat, dLng], { icon: customIcon }).addTo(map);
 
       const thumbImg = defect.image_url ? `
         <div style="height: 85px; border-radius: 8px; overflow: hidden; margin-bottom: 6px; background: #0f172a;">
@@ -173,10 +187,23 @@ export default function GISMapView({
         </div>
       ` : '';
 
+      const crowdBadgeHtml = (verifCount > 1 || dupCount > 0) ? `
+        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 4px 8px; margin-bottom: 6px; font-size: 10px; font-family: monospace; color: #047857; display: flex; align-items: center; justify-content: space-between;">
+          <span>👥 Crowd Confirmed: <strong>${verifCount} Reports</strong></span>
+          <span style="font-weight: 800; color: #059669;">🛡️ ${dupCount} Dupes Merged</span>
+        </div>
+      ` : '';
+
+      const dAddress = defect.location?.address || defect.address || 'Bengaluru Road Corridor';
+      const dWard = defect.location?.ward_no || defect.ward_no || 150;
+      const dDepth = defect.dimensions?.depth_cm || defect.depth_cm || 10;
+      const dWidth = defect.dimensions?.width_cm || defect.width_cm || 45;
+
       // Detailed Telemetry Popup
       marker.bindPopup(`
         <div style="min-width: 240px; font-family: system-ui, sans-serif; padding: 4px; color: #0f172a;">
           ${thumbImg}
+          ${crowdBadgeHtml}
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-weight: 800; font-size: 11px; font-family: monospace; color: #0284c7;">
               #${defect.ticket_code || 'ROAD-DEFECT'}
@@ -191,19 +218,19 @@ export default function GISMapView({
           </div>
 
           <div style="font-size: 11px; color: #475569; margin-bottom: 6px;">
-            📍 ${defect.location.address || 'Bengaluru Road Corridor'}
+            📍 ${dAddress}
           </div>
 
           <div style="background: ${alertBoxBg}; border: 1px solid ${alertBoxBorder}; border-radius: 8px; padding: 6px; font-size: 11px; font-family: monospace; margin-bottom: 6px;">
             <div style="color: ${alertBoxText}; font-weight: bold;">${delayText}</div>
             <div style="color: #475569; margin-top: 2px;">
-              Depth: <strong style="color: ${badgeColor};">${defect.dimensions?.depth_cm || 10} cm</strong> • Width: <strong>${defect.dimensions?.width_cm || 45} cm</strong>
+              Depth: <strong style="color: ${badgeColor};">${dDepth} cm</strong> • Width: <strong>${dWidth} cm</strong>
             </div>
           </div>
 
           <div style="font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
-            <span>Ward ${defect.location.ward_no || 150}</span>
-            <span>GPS: ${defect.location.lat.toFixed(4)}, ${defect.location.lng.toFixed(4)}</span>
+            <span>Ward ${dWard}</span>
+            <span>GPS: ${dLat.toFixed(4)}, ${dLng.toFixed(4)}</span>
           </div>
         </div>
       `);
