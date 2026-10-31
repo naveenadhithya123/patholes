@@ -496,6 +496,20 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
 
     const submitWithLocation = async (lat, lng, accuracy, addressName) => {
       try {
+        let capturedSnapshot = null;
+        try {
+          if (videoRef.current && videoRef.current.videoWidth > 0) {
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = videoRef.current.videoWidth;
+            snapCanvas.height = videoRef.current.videoHeight;
+            const ctx = snapCanvas.getContext('2d');
+            ctx.drawImage(videoRef.current, 0, 0);
+            capturedSnapshot = snapCanvas.toDataURL('image/jpeg', 0.85);
+          }
+        } catch (snapErr) {
+          console.warn('Snapshot capture note:', snapErr);
+        }
+
         const payloadType = autoVisionResult.detected ? autoVisionResult.type : 'pothole';
         const payloadSeverity = autoVisionResult.detected ? autoVisionResult.severity : 'HIGH';
         const payloadDimensions = {
@@ -518,6 +532,7 @@ export default function CitizenCameraPortal({ onDefectReported, onBack }) {
             type: payloadType,
             severity: payloadSeverity,
             dimensions: payloadDimensions,
+            image_data: capturedSnapshot,
             reported_by: 'citizen_camera'
           })
         });

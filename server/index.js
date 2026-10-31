@@ -731,6 +731,19 @@ app.post('/api/defects/report', async (req, res) => {
   const ticket_code = `${ticketPrefix}-${nextCodeNum}`;
   const autoSubdiv = findClosestSubdivision(candidateLat, candidateLng);
 
+  // Handle Photo Storage: If base64 image data was sent and Supabase is active, upload to bucket
+  let finalImageUrl = image_data || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80';
+  if (image_data && typeof image_data === 'string' && image_data.startsWith('data:image') && supabaseService.isSupabaseActive()) {
+    try {
+      const storageUrl = await supabaseService.uploadImageToStorage(image_data, `${ticket_code}.jpg`);
+      if (storageUrl) {
+        finalImageUrl = storageUrl;
+      }
+    } catch (uploadErr) {
+      console.warn('Supabase image upload notice:', uploadErr.message);
+    }
+  }
+
   const newDefect = {
     id: `DEF-2026-${nextCodeNum}`,
     ticket_code,
@@ -763,7 +776,7 @@ app.post('/api/defects/report', async (req, res) => {
     score_breakdown: aiResult.score_breakdown,
     reported_by,
     vehicle_telemetry: vehicle_telemetry || null,
-    image_url: image_data || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    image_url: finalImageUrl,
     created_at: new Date().toISOString(),
     status: 'Assigned to Sub-Division',
     workflow_stage: 'ASSIGNED_TO_SUBDIVISION',
@@ -1032,7 +1045,7 @@ app.post('/api/defects/:id/start-repair', (req, res) => {
 });
 
 // Sub-Division Area Head Completes Repair & Submits After Photo
-app.post('/api/defects/:id/submit-completion', (req, res) => {
+app.post('/api/defects/:id/submit-completion', async (req, res) => {
   const { id } = req.params;
   const {
     after_image_url = '/images/pothole_after.jpg',
@@ -1045,11 +1058,23 @@ app.post('/api/defects/:id/submit-completion', (req, res) => {
     return res.status(404).json({ success: false, message: 'Defect ticket not found' });
   }
 
+  let finalAfterUrl = after_image_url;
+  if (after_image_url && typeof after_image_url === 'string' && after_image_url.startsWith('data:image') && supabaseService.isSupabaseActive()) {
+    try {
+      const storageUrl = await supabaseService.uploadImageToStorage(after_image_url, `after_${defect.ticket_code}.jpg`);
+      if (storageUrl) {
+        finalAfterUrl = storageUrl;
+      }
+    } catch (uploadErr) {
+      console.warn('Supabase after-image upload notice:', uploadErr.message);
+    }
+  }
+
   const completedAt = new Date().toISOString();
   const durationStr = formatDurationBetween(defect.created_at, completedAt);
 
   defect.completion_details = {
-    after_image_url,
+    after_image_url: finalAfterUrl,
     completed_at: completedAt,
     completed_by_workers,
     repair_notes,
@@ -1060,6 +1085,18 @@ app.post('/api/defects/:id/submit-completion', (req, res) => {
   defect.workflow_stage = 'RESOLVED';
   defect.head_admin_approved = true;
   defect.resolved_at = completedAt;
+  defect.duration_took_str = durationStr;
+  defect.after_image_url = finalAfterUrl;
+
+  // Sync update to Supabase
+  if (supabaseService.isSupabaseActive()) {
+    supabaseService.updateDefectInDb(defect.id, {
+      status: 'Resolved',
+      workflow_stage: 'RESOLVED',
+      head_admin_approved: true,
+      after_image_url: finalAfterUrl
+    }).catch(err => console.warn('Supabase async resolve update note:', err.message));
+  }
   defect.duration_took_str = durationStr;
 
   res.json({
