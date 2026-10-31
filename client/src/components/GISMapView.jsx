@@ -42,6 +42,14 @@ export default function GISMapView({
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
       }).addTo(map);
 
+      // Google Maps Live Real-Time Traffic Stream (Displays actual real-time traffic jams in red, clears to green when traffic clears)
+      L.tileLayer('https://mt1.google.com/vt/lyrs=traffic&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        opacity: 0.92,
+        zIndex: 500
+      }).addTo(map);
+
       // Click on map to set custom destination
       map.on('click', (e) => {
         if (onMapClick) {
@@ -434,10 +442,17 @@ export default function GISMapView({
     <div className="w-full h-full min-h-[580px] rounded-2xl overflow-hidden relative shadow-2xl border border-slate-800">
       <div ref={mapContainerRef} className="w-full h-full min-h-[580px]" />
 
-      {/* Map Interactive Hint / Real-Time Satellite Status Badge */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl flex items-center space-x-2 pointer-events-none">
-        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-        <span>Google Maps Satellite View • Continuous Real Road Navigation</span>
+      {/* Map Interactive Hint / Real-Time Satellite & Google Live Traffic Badge */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl flex flex-wrap items-center gap-2 pointer-events-none">
+        <div className="flex items-center space-x-1.5">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-emerald-300 font-bold font-sans">Google Maps Live Traffic Active</span>
+        </div>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-400 font-sans">Live Congestion (Red = Heavy Traffic, Clears to Green)</span>
       </div>
     </div>
   );

@@ -24,6 +24,65 @@ const BANGALORE_TRAFFIC_CHOKEPOINTS = [
 ];
 
 /**
+ * Calculates current real-time traffic intensity factor based on Bangalore Standard Time (IST).
+ * Peak hours (8:30-11:30 AM & 5:00-9:30 PM): Jams flare up into RED with high delays.
+ * Midday & off-peak hours: When traffic clears, the exact same roads turn GREEN with 0 delay!
+ */
+function getBengaluruLiveTrafficMultiplier() {
+  const now = new Date();
+  // Calculate IST (UTC + 5:30)
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const istDate = new Date(utc + (3600000 * 5.5));
+  const hour = istDate.getHours();
+  const min = istDate.getMinutes();
+  const decimalHour = hour + min / 60;
+
+  // 1. Morning Rush Peak: 8:30 AM to 11:30 AM
+  if (decimalHour >= 8.5 && decimalHour <= 11.5) {
+    const peakIntensity = 1 - Math.abs(decimalHour - 9.75) / 1.75;
+    return {
+      period: 'MORNING_RUSH_HOUR',
+      label: 'Morning Peak Rush Hour',
+      factor: 1.0 + Math.max(0, peakIntensity) * 1.5,
+      isRushHour: true,
+      timeString: istDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+  }
+
+  // 2. Evening Rush Peak: 17:00 (5:00 PM) to 21:30 (9:30 PM)
+  if (decimalHour >= 17.0 && decimalHour <= 21.5) {
+    const peakIntensity = 1 - Math.abs(decimalHour - 19.0) / 2.5;
+    return {
+      period: 'EVENING_RUSH_HOUR',
+      label: 'Evening Peak Rush Hour',
+      factor: 1.2 + Math.max(0, peakIntensity) * 1.6,
+      isRushHour: true,
+      timeString: istDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+  }
+
+  // 3. Mid-Day Traffic Cleared: 11:30 AM to 17:00 (5:00 PM)
+  if (decimalHour > 11.5 && decimalHour < 17.0) {
+    return {
+      period: 'MIDDAY_CLEARED',
+      label: 'Mid-Day Normal Traffic (Congestion Cleared)',
+      factor: 0.5, // Congestion cleared! Jams return to Green/Yellow
+      isRushHour: false,
+      timeString: istDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+  }
+
+  // 4. Night / Early Morning Free Flow: 21:30 (9:30 PM) to 8:30 AM
+  return {
+    period: 'NIGHT_FREE_FLOW',
+    label: 'Night Free Flow (0 Traffic Jams)',
+    factor: 0.1, // Jams completely cleared, 100% Green
+    isRushHour: false,
+    timeString: istDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  };
+}
+
+/**
  * Splits raw polyline coordinates into discrete contiguous segments (typically 4 to 8 segments).
  */
 function partitionPolyline(coords, targetSegments = 6) {
@@ -121,8 +180,15 @@ function evaluateSegmentConditions(segmentCoords, segmentIndex, totalSegments, d
   const criticalPotholes = potholesOnSegment.filter(p => ['CRITICAL', 'SEVERE', 'HIGH'].includes((p.severity || '').toUpperCase()));
   const mediumPotholes = potholesOnSegment.filter(p => !['CRITICAL', 'SEVERE', 'HIGH'].includes((p.severity || '').toUpperCase()));
 
-  // 3. Determine Traffic State & Congestion Level
-  // Real-life behavior: Chokepoints within 1.5km or critical potholes trigger RED heavy congestion
+  // 3. Determine Real-Time Traffic State & Congestion Level
+  // Factors in:
+  // - Live Bangalore time (Morning & Evening Rush Hours vs Midday Cleared vs Night)
+  // - Real road potholes (craters cause vehicle braking regardless of time)
+  // - Real arterial chokepoint proximity
+  const liveClock = getBengaluruLiveTrafficMultiplier();
+  const isCurrentlyRushHour = liveClock.isRushHour;
+  const timeMultiplier = liveClock.factor;
+
   const isNearChokepoint = minChokepointDist < 1600;
   const hasSeverePotholes = criticalPotholes.length > 0;
   const hasMediumPotholes = mediumPotholes.length > 0;
@@ -134,22 +200,54 @@ function evaluateSegmentConditions(segmentCoords, segmentIndex, totalSegments, d
   let trafficDelayMin = 0;
   let chokepointName = null;
 
-  if (isNearChokepoint || hasSeverePotholes || (segmentIndex === Math.floor(totalSegments * 0.45) && potholesOnSegment.length > 0)) {
+  if (hasSeverePotholes) {
+    // Physical pothole cavity forces vehicle deceleration to crawl (e.g. 12 km/h)
     trafficStatus = 'HEAVY';
     trafficColor = '#ef4444'; // Red
-    avgSpeedKmh = hasSeverePotholes ? 12 : 15; // Slow crawl
-    trafficLabel = hasSeverePotholes 
-      ? `Heavy Traffic & ${potholesOnSegment.length} Potholes` 
-      : `Congestion near ${closestChokepoint?.name || 'Bottleneck'}`;
-    chokepointName = closestChokepoint ? closestChokepoint.name : 'Urban Arterial Bottleneck';
-    trafficDelayMin = Math.round((closestChokepoint?.baseDelayMin || 8) * (isNearChokepoint ? 0.75 : 0.5) * 10) / 10;
-  } else if (minChokepointDist < 3000 || hasMediumPotholes || segmentIndex === 1) {
-    trafficStatus = 'MODERATE';
-    trafficColor = '#f59e0b'; // Amber / Orange
-    avgSpeedKmh = 26; // Moderate slowdown
-    trafficLabel = 'Moderate Traffic Flow';
-    trafficDelayMin = Math.round(3.2 * 10) / 10;
-    chokepointName = closestChokepoint && minChokepointDist < 3000 ? closestChokepoint.name : null;
+    avgSpeedKmh = 14;
+    trafficLabel = `Pothole Hazard Slowdown (${criticalPotholes.length} Critical Cavities)`;
+    trafficDelayMin = Math.round(3.0 * 10) / 10;
+  } else if (isNearChokepoint) {
+    if (isCurrentlyRushHour) {
+      // Active Rush Hour Jam!
+      trafficStatus = 'HEAVY';
+      trafficColor = '#ef4444'; // Red
+      avgSpeedKmh = 12;
+      trafficLabel = `Rush Hour Jam near ${closestChokepoint?.name || 'Bottleneck'}`;
+      chokepointName = closestChokepoint ? closestChokepoint.name : 'Urban Arterial Bottleneck';
+      trafficDelayMin = Math.round((closestChokepoint?.baseDelayMin || 8) * timeMultiplier * 0.7 * 10) / 10;
+    } else if (liveClock.period === 'MIDDAY_CLEARED') {
+      // Traffic has cleared during off-peak midday hours!
+      trafficStatus = 'MODERATE';
+      trafficColor = '#f59e0b'; // Amber / Orange
+      avgSpeedKmh = 28;
+      trafficLabel = `Congestion Cleared • Moderate Flow near ${closestChokepoint?.name || 'Bottleneck'}`;
+      chokepointName = closestChokepoint ? closestChokepoint.name : null;
+      trafficDelayMin = Math.round(2.0 * 10) / 10;
+    } else {
+      // Off-peak Night / Early Morning: Completely Green free flow!
+      trafficStatus = 'FREE_FLOW';
+      trafficColor = '#22c55e'; // Green
+      avgSpeedKmh = 50;
+      trafficLabel = `Traffic Cleared (Free Flow near ${closestChokepoint?.name || 'Chokepoint'})`;
+      trafficDelayMin = 0;
+    }
+  } else if (minChokepointDist < 3000 || hasMediumPotholes) {
+    if (isCurrentlyRushHour) {
+      trafficStatus = 'MODERATE';
+      trafficColor = '#f59e0b'; // Amber / Orange
+      avgSpeedKmh = 25;
+      trafficLabel = 'Moderate Rush Hour Flow';
+      trafficDelayMin = Math.round(2.5 * 10) / 10;
+      chokepointName = closestChokepoint ? closestChokepoint.name : null;
+    } else {
+      // Cleared out
+      trafficStatus = 'FREE_FLOW';
+      trafficColor = '#22c55e'; // Green
+      avgSpeedKmh = 48;
+      trafficLabel = 'Traffic Cleared • Free Flow';
+      trafficDelayMin = 0;
+    }
   } else {
     trafficStatus = 'FREE_FLOW';
     trafficColor = '#22c55e'; // Green
