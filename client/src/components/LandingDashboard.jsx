@@ -87,7 +87,7 @@ export default function LandingDashboard({ onSelectView, defects = [] }) {
           </div>
         </button>
 
-        {/* CARD 3: CAR TRACKING (AUTOMATED FLEET AI / YOLO SCANNER) */}
+        {/* CARD 3: CAR TRACKING (AUTOMATED FLEET AI / YOLOv26 SCANNER) */}
         <button
           type="button"
           onClick={() => onSelectView('car_tracking')}
@@ -108,7 +108,7 @@ export default function LandingDashboard({ onSelectView, defects = [] }) {
                 </span>
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                10 municipal patrol vehicles scanning road corridors via YOLOv8. Tracks Pending, In-Progress, and Solved repairs.
+                10 municipal patrol vehicles scanning road corridors via YOLOv26. Tracks Pending, In-Progress, and Solved repairs.
               </p>
             </div>
           </div>
