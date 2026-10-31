@@ -24,6 +24,19 @@ let climateData = require('./data/climate_dataset.json');
 let defectsData = [...require('./data/defects_seed.json')];
 const subdivisionsData = require('./data/subdivisions.json');
 
+// Hydrate defects from Supabase PostgreSQL if active
+if (supabaseService.isSupabaseActive()) {
+  supabaseService.fetchDefectsFromDb().then(dbDefects => {
+    if (dbDefects && dbDefects.length > 0) {
+      console.log(`📥 Loaded ${dbDefects.length} defects from Supabase Cloud Database.`);
+      const dbIds = new Set(dbDefects.map(d => d.id));
+      defectsData = [...dbDefects, ...defectsData.filter(d => !dbIds.has(d.id))];
+    }
+  }).catch(err => {
+    console.warn('Supabase initial sync note (using seed fallback):', err.message);
+  });
+}
+
 // AI Engine Status Endpoints
 app.get('/api/system/ai-status', (req, res) => {
   const hasKey = !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10;
