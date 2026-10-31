@@ -9,7 +9,11 @@
     "severity": "CRITICAL",
     "severity_score": 92,
     "confidence_pct": 96.4,
-    "dimensions": { "width_cm": 60, "length_cm": 75, "depth_cm": 14 },
+    "dimensions": {
+      "width_cm": 60,
+      "length_cm": 75,
+      "depth_cm": 14
+    },
     "location": {
       "lat": 12.9177,
       "lng": 77.6238,
@@ -52,7 +56,11 @@
     "severity": "CRITICAL",
     "severity_score": 89,
     "confidence_pct": 94.8,
-    "dimensions": { "width_cm": 50, "length_cm": 55, "depth_cm": 11 },
+    "dimensions": {
+      "width_cm": 50,
+      "length_cm": 55,
+      "depth_cm": 11
+    },
     "location": {
       "lat": 12.9284,
       "lng": 77.6835,
@@ -95,7 +103,11 @@
     "severity": "HIGH",
     "severity_score": 84,
     "confidence_pct": 91.2,
-    "dimensions": { "width_cm": 3.5, "length_cm": 280, "depth_cm": 8 },
+    "dimensions": {
+      "width_cm": 3.5,
+      "length_cm": 280,
+      "depth_cm": 8
+    },
     "location": {
       "lat": 12.9995,
       "lng": 77.6948,
@@ -136,7 +148,11 @@
     "severity": "HIGH",
     "severity_score": 76,
     "confidence_pct": 88.5,
-    "dimensions": { "width_cm": 240, "length_cm": 1200, "depth_cm": 5 },
+    "dimensions": {
+      "width_cm": 240,
+      "length_cm": 1200,
+      "depth_cm": 5
+    },
     "location": {
       "lat": 12.9832,
       "lng": 77.7441,
@@ -177,7 +193,11 @@
     "severity": "HIGH",
     "severity_score": 82,
     "confidence_pct": 92.1,
-    "dimensions": { "width_cm": 12, "length_cm": 450, "depth_cm": 6 },
+    "dimensions": {
+      "width_cm": 12,
+      "length_cm": 450,
+      "depth_cm": 6
+    },
     "location": {
       "lat": 13.0362,
       "lng": 77.5968,
@@ -217,8 +237,12 @@
     "description": "Surface crater approx 7cm deep near bus shelter. Repaired with rapid bituminous cold patch and leveled.",
     "severity": "MODERATE",
     "severity_score": 65,
-    "confidence_pct": 93.0,
-    "dimensions": { "width_cm": 35, "length_cm": 40, "depth_cm": 7 },
+    "confidence_pct": 93,
+    "dimensions": {
+      "width_cm": 35,
+      "length_cm": 40,
+      "depth_cm": 7
+    },
     "location": {
       "lat": 12.9721,
       "lng": 77.6415,
@@ -269,7 +293,11 @@
     "severity": "MODERATE",
     "severity_score": 52,
     "confidence_pct": 87.1,
-    "dimensions": { "width_cm": 4, "length_cm": 800, "depth_cm": 3 },
+    "dimensions": {
+      "width_cm": 4,
+      "length_cm": 800,
+      "depth_cm": 3
+    },
     "location": {
       "lat": 12.9362,
       "lng": 77.6255,
@@ -309,8 +337,12 @@
     "description": "High-impact road crater measuring 13cm depth. Thoroughly milled, repaved with hot bituminous mix and restored to highway grade.",
     "severity": "CRITICAL",
     "severity_score": 93,
-    "confidence_pct": 97.0,
-    "dimensions": { "width_cm": 58, "length_cm": 65, "depth_cm": 13 },
+    "confidence_pct": 97,
+    "dimensions": {
+      "width_cm": 58,
+      "length_cm": 65,
+      "depth_cm": 13
+    },
     "location": {
       "lat": 12.9344,
       "lng": 77.6225,
@@ -361,7 +393,11 @@
     "severity": "HIGH",
     "severity_score": 78,
     "confidence_pct": 95.1,
-    "dimensions": { "width_cm": 42, "length_cm": 48, "depth_cm": 9 },
+    "dimensions": {
+      "width_cm": 42,
+      "length_cm": 48,
+      "depth_cm": 9
+    },
     "location": {
       "lat": 12.9749,
       "lng": 77.6085,
@@ -411,8 +447,12 @@
     "description": "11cm crater formed after localized pipe leakage. Restored with asphalt macadam and vibratory roller finish.",
     "severity": "CRITICAL",
     "severity_score": 90,
-    "confidence_pct": 96.0,
-    "dimensions": { "width_cm": 52, "length_cm": 58, "depth_cm": 11 },
+    "confidence_pct": 96,
+    "dimensions": {
+      "width_cm": 52,
+      "length_cm": 58,
+      "depth_cm": 11
+    },
     "location": {
       "lat": 13.0031,
       "lng": 77.5701,
@@ -452,5 +492,769 @@
     "duration_took_str": "1 day 2 hrs",
     "verification_count": 6,
     "duplicates_prevented": 14
+  },
+  {
+    "id": "DEF-2026-1011",
+    "ticket_code": "NF-RD-1011",
+    "type": "pothole",
+    "category_label": "Severe Road Crater",
+    "title": "Severe Crater on Hosur Road near Bommanahalli Junction",
+    "description": "13cm deep crater across primary bus lane. High axle-impact risk for peak hour commuters.",
+    "severity": "CRITICAL",
+    "severity_score": 93,
+    "confidence_pct": 96.8,
+    "dimensions": {
+      "width_cm": 65,
+      "length_cm": 70,
+      "depth_cm": 13
+    },
+    "location": {
+      "lat": 12.9081,
+      "lng": 77.6245,
+      "address": "Near Bommanahalli Toll Gate, Hosur Main Road",
+      "ward_no": 175,
+      "ward_name": "Bommanahalli",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 95,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "/images/pothole_before.jpg",
+    "created_at": "2026-10-30T16:15:00Z",
+    "status": "In Progress",
+    "workflow_stage": "IN_PROGRESS",
+    "assigned_subdivision": {
+      "id": "subdiv-south-11",
+      "name": "Bommanahalli Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. N. Manjunath",
+      "email": "subdiv.bommanahalli@nammafix.gov.in"
+    },
+    "field_crew": "Bommanahalli Rapid Paving Crew #2"
+  },
+  {
+    "id": "DEF-2026-1012",
+    "ticket_code": "NF-RD-1012",
+    "type": "pothole",
+    "category_label": "Cavernous Road Pit",
+    "title": "Cavernous Road Pit near Marathahalli Bridge Flank",
+    "description": "12cm deep pit with exposed aggregate causing severe two-wheeler skid hazards.",
+    "severity": "CRITICAL",
+    "severity_score": 91,
+    "confidence_pct": 95.4,
+    "dimensions": {
+      "width_cm": 58,
+      "length_cm": 62,
+      "depth_cm": 12
+    },
+    "location": {
+      "lat": 12.9562,
+      "lng": 77.7011,
+      "address": "ORR Marathahalli Underpass Service Road",
+      "ward_no": 85,
+      "ward_name": "Marathahalli",
+      "zone": "East"
+    },
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 94,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "/images/pothole_before.jpg",
+    "created_at": "2026-10-30T17:20:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-east-05",
+      "name": "Marathahalli Sub-Division",
+      "corporation": "East",
+      "engineer": "Er. Harish Kumar",
+      "email": "subdiv.marathahalli@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1013",
+    "ticket_code": "NF-RD-1013",
+    "type": "pothole",
+    "category_label": "Exposed Ballast Crater",
+    "title": "Deep Crater on Tumkur Road near Yeshwanthpur Metro",
+    "description": "14cm deep cavity with broken bitumen blocks. Hazardous for high-velocity corridor traffic.",
+    "severity": "CRITICAL",
+    "severity_score": 94,
+    "confidence_pct": 97.2,
+    "dimensions": {
+      "width_cm": 62,
+      "length_cm": 80,
+      "depth_cm": 14
+    },
+    "location": {
+      "lat": 13.0234,
+      "lng": 77.5501,
+      "address": "Yeshwanthpur Metro Station Approach, Tumkur Road",
+      "ward_no": 37,
+      "ward_name": "Yeshwanthpur",
+      "zone": "West"
+    },
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 96,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "/images/pothole_before.jpg",
+    "created_at": "2026-10-30T18:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-west-05",
+      "name": "Yeshwanthpur Sub-Division",
+      "corporation": "West",
+      "engineer": "Er. Shridhar Bhat",
+      "email": "subdiv.yeshwanthpur@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1014",
+    "ticket_code": "NF-RD-1014",
+    "type": "pothole",
+    "category_label": "Severe Pavement Crater",
+    "title": "Dangerous Crater on Bannerghatta Main Road (Arekere)",
+    "description": "15cm crater near Arekere Gate junction. Severe vehicle crawl and traffic bottleneck.",
+    "severity": "CRITICAL",
+    "severity_score": 95,
+    "confidence_pct": 97.5,
+    "dimensions": {
+      "width_cm": 70,
+      "length_cm": 75,
+      "depth_cm": 15
+    },
+    "location": {
+      "lat": 12.8891,
+      "lng": 77.5962,
+      "address": "Near Arekere Gate, Bannerghatta Main Road",
+      "ward_no": 193,
+      "ward_name": "Bannerghatta Road",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 97,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "/images/pothole_before.jpg",
+    "created_at": "2026-10-30T19:10:00Z",
+    "status": "In Progress",
+    "workflow_stage": "IN_PROGRESS",
+    "assigned_subdivision": {
+      "id": "subdiv-south-07",
+      "name": "Bannerghatta Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. Shashi Kumar",
+      "email": "subdiv.bannerghatta@nammafix.gov.in"
+    },
+    "field_crew": "Bannerghatta Arterial Road Gang #1"
+  },
+  {
+    "id": "DEF-2026-1015",
+    "ticket_code": "NF-RD-1015",
+    "type": "pothole",
+    "category_label": "High Velocity Highway Crater",
+    "title": "Severe Crater on Yelahanka Bypass Express Corridor",
+    "description": "12cm asphalt crater on northbound lane towards airport. Sharp braking hazard.",
+    "severity": "CRITICAL",
+    "severity_score": 90,
+    "confidence_pct": 95.1,
+    "dimensions": {
+      "width_cm": 55,
+      "length_cm": 60,
+      "depth_cm": 12
+    },
+    "location": {
+      "lat": 13.1004,
+      "lng": 77.5963,
+      "address": "Yelahanka Police Station Bypass Junction",
+      "ward_no": 4,
+      "ward_name": "Yelahanka",
+      "zone": "North"
+    },
+    "ai_calculated_priority": "P1_IMMEDIATE",
+    "ai_priority_score": 93,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "/images/pothole_before.jpg",
+    "created_at": "2026-10-30T20:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-north-02",
+      "name": "Yelahanka Sub-Division",
+      "corporation": "North",
+      "engineer": "Er. Srinath Reddy",
+      "email": "subdiv.yelahanka@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1016",
+    "ticket_code": "NF-RD-1016",
+    "type": "pothole",
+    "category_label": "Moderate Asphalt Depression",
+    "title": "Moderate Pothole on Mysore Road near Deepanjali Nagar",
+    "description": "8cm road cavity near metro pillar 142. Requires bituminous cold-mix packing.",
+    "severity": "MEDIUM",
+    "severity_score": 72,
+    "confidence_pct": 92.4,
+    "dimensions": {
+      "width_cm": 45,
+      "length_cm": 50,
+      "depth_cm": 8
+    },
+    "location": {
+      "lat": 12.9521,
+      "lng": 77.5385,
+      "address": "Mysore Road Metro Corridor, Deepanjali Nagar",
+      "ward_no": 158,
+      "ward_name": "Deepanjali Nagar",
+      "zone": "West"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 78,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T10:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-west-08",
+      "name": "Binnypet Sub-Division",
+      "corporation": "West",
+      "engineer": "Er. Prakash Babu",
+      "email": "subdiv.binnypet@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1017",
+    "ticket_code": "NF-RD-1017",
+    "type": "road_crack",
+    "category_label": "Fatigue Alligator Cracking",
+    "title": "Alligator Cracking on Old Airport Road near Murugeshpalya",
+    "description": "Interconnected fatigue cracks spanning 9 meters. Bitumen binder raveling.",
+    "severity": "MEDIUM",
+    "severity_score": 68,
+    "confidence_pct": 90.8,
+    "dimensions": {
+      "width_cm": 180,
+      "length_cm": 900,
+      "depth_cm": 7
+    },
+    "location": {
+      "lat": 12.9578,
+      "lng": 77.6582,
+      "address": "Old Airport Road, Murugeshpalya Junction",
+      "ward_no": 112,
+      "ward_name": "HAL Airport",
+      "zone": "East"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 75,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T11:30:00Z",
+    "status": "In Progress",
+    "workflow_stage": "IN_PROGRESS",
+    "assigned_subdivision": {
+      "id": "subdiv-east-06",
+      "name": "HAL Sub-Division",
+      "corporation": "East",
+      "engineer": "Er. Sunil Hegde",
+      "email": "subdiv.hal@nammafix.gov.in"
+    },
+    "field_crew": "HAL Maintenance Unit #2"
+  },
+  {
+    "id": "DEF-2026-1018",
+    "ticket_code": "NF-RD-1018",
+    "type": "pothole",
+    "category_label": "Moderate Road Cavity",
+    "title": "Asphalt Pothole on Jayanagar 4th Block 11th Main",
+    "description": "8cm cavity near commercial shopping complex. Causes localized vehicle slowdown.",
+    "severity": "MEDIUM",
+    "severity_score": 70,
+    "confidence_pct": 91.5,
+    "dimensions": {
+      "width_cm": 40,
+      "length_cm": 48,
+      "depth_cm": 8
+    },
+    "location": {
+      "lat": 12.9298,
+      "lng": 77.5824,
+      "address": "11th Main Road, Jayanagar 4th Block",
+      "ward_no": 153,
+      "ward_name": "Jayanagar",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 76,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1542314831-c6a4d27299a9?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T12:45:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-south-04",
+      "name": "Jayanagar Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. C. K. Narayana",
+      "email": "subdiv.jayanagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1019",
+    "ticket_code": "NF-RD-1019",
+    "type": "pothole",
+    "category_label": "Trench Settlement Cavity",
+    "title": "Trench Settlement near Richmond Circle Flyover",
+    "description": "9cm depression following underground utility pipe refill. Needs asphalt compaction.",
+    "severity": "MEDIUM",
+    "severity_score": 74,
+    "confidence_pct": 93,
+    "dimensions": {
+      "width_cm": 50,
+      "length_cm": 120,
+      "depth_cm": 9
+    },
+    "location": {
+      "lat": 12.9645,
+      "lng": 77.6012,
+      "address": "Richmond Road near Flyover Descent, CBD",
+      "ward_no": 111,
+      "ward_name": "Shanthinagar",
+      "zone": "Central"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 80,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T13:10:00Z",
+    "status": "In Progress",
+    "workflow_stage": "IN_PROGRESS",
+    "assigned_subdivision": {
+      "id": "subdiv-central-02",
+      "name": "Shanthinagar Sub-Division",
+      "corporation": "Central",
+      "engineer": "Er. P. Venkatesh",
+      "email": "subdiv.shanthinagar@nammafix.gov.in"
+    },
+    "field_crew": "Central Rapid Squad #1"
+  },
+  {
+    "id": "DEF-2026-1020",
+    "ticket_code": "NF-RD-1020",
+    "type": "pothole",
+    "category_label": "Moderate Road Pothole",
+    "title": "Pothole on Rajajinagar 1st Block Chord Road",
+    "description": "7cm deep cavity in middle driving lane. Moderate vehicle bump reported.",
+    "severity": "MEDIUM",
+    "severity_score": 69,
+    "confidence_pct": 91,
+    "dimensions": {
+      "width_cm": 42,
+      "length_cm": 45,
+      "depth_cm": 7
+    },
+    "location": {
+      "lat": 12.9892,
+      "lng": 77.5531,
+      "address": "West of Chord Road, Rajajinagar 1st Block",
+      "ward_no": 99,
+      "ward_name": "Rajajinagar",
+      "zone": "West"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 74,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "https://images.unsplash.com/photo-1542314831-c6a4d27299a9?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T14:20:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-west-02",
+      "name": "Rajajinagar Sub-Division",
+      "corporation": "West",
+      "engineer": "Er. Manjunath Swamy",
+      "email": "subdiv.rajajinagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1021",
+    "ticket_code": "NF-RD-1021",
+    "type": "pothole",
+    "category_label": "Asphalt Settlement Dip",
+    "title": "Asphalt Settlement Dip on Thanisandra Main Road",
+    "description": "8cm localized dip in carriageway near railway crossing.",
+    "severity": "MEDIUM",
+    "severity_score": 71,
+    "confidence_pct": 91.8,
+    "dimensions": {
+      "width_cm": 48,
+      "length_cm": 52,
+      "depth_cm": 8
+    },
+    "location": {
+      "lat": 13.0551,
+      "lng": 77.6324,
+      "address": "Thanisandra Main Road near Railway Bridge",
+      "ward_no": 6,
+      "ward_name": "Thanisandra",
+      "zone": "North"
+    },
+    "ai_calculated_priority": "P2_HIGH",
+    "ai_priority_score": 77,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T15:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-north-04",
+      "name": "Thanisandra Sub-Division",
+      "corporation": "North",
+      "engineer": "Er. Jagadeesh Kumar",
+      "email": "subdiv.thanisandra@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1022",
+    "ticket_code": "NF-RD-1022",
+    "type": "pothole",
+    "category_label": "Moderate Road Cavity",
+    "title": "Pothole on BTM Layout 2nd Stage 16th Main Road",
+    "description": "6cm deep cavity near Udupi Garden signal.",
+    "severity": "MEDIUM",
+    "severity_score": 66,
+    "confidence_pct": 89.5,
+    "dimensions": {
+      "width_cm": 38,
+      "length_cm": 42,
+      "depth_cm": 6
+    },
+    "location": {
+      "lat": 12.9145,
+      "lng": 77.6098,
+      "address": "16th Main, BTM 2nd Stage near Udupi Signal",
+      "ward_no": 176,
+      "ward_name": "BTM Layout",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 68,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1542314831-c6a4d27299a9?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T15:40:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-south-06",
+      "name": "BTM Layout Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. Srinath Gowda",
+      "email": "subdiv.btmlayout@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1023",
+    "ticket_code": "NF-RD-1023",
+    "type": "surface_wear",
+    "category_label": "Minor Surface Wear",
+    "title": "Surface Wear & Ravelling on Cunningham Road",
+    "description": "4cm shallow surface peeling. Early stage deterioration; no acute suspension hazard.",
+    "severity": "LOW",
+    "severity_score": 38,
+    "confidence_pct": 87.2,
+    "dimensions": {
+      "width_cm": 30,
+      "length_cm": 35,
+      "depth_cm": 4
+    },
+    "location": {
+      "lat": 12.9862,
+      "lng": 77.5971,
+      "address": "Cunningham Road near Chandrika Hotel",
+      "ward_no": 93,
+      "ward_name": "Vasanth Nagar",
+      "zone": "Central"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 45,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T09:15:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-central-07",
+      "name": "Vasanth Nagar Sub-Division",
+      "corporation": "Central",
+      "engineer": "Er. Meenakshi Sundaram",
+      "email": "subdiv.vasanthnagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1024",
+    "ticket_code": "NF-RD-1024",
+    "type": "surface_wear",
+    "category_label": "Shallow Surface Ravelling",
+    "title": "Shallow Surface Ravelling on JP Nagar 15th Cross",
+    "description": "3cm minor asphalt erosion in residential lane. Vehicle ride remains stable.",
+    "severity": "LOW",
+    "severity_score": 34,
+    "confidence_pct": 85,
+    "dimensions": {
+      "width_cm": 28,
+      "length_cm": 30,
+      "depth_cm": 3
+    },
+    "location": {
+      "lat": 12.9082,
+      "lng": 77.5855,
+      "address": "15th Cross Road, JP Nagar 2nd Phase",
+      "ward_no": 177,
+      "ward_name": "JP Nagar",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 40,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T10:30:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-south-05",
+      "name": "JP Nagar Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. R. K. Bharadwaj",
+      "email": "subdiv.jpnagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1025",
+    "ticket_code": "NF-RD-1025",
+    "type": "road_crack",
+    "category_label": "Hairline Pavement Fissure",
+    "title": "Hairline Longitudinal Fissure on Indiranagar CMH Road",
+    "description": "3cm superficial settlement line. Recommended for crack sealing before monsoon.",
+    "severity": "LOW",
+    "severity_score": 36,
+    "confidence_pct": 88,
+    "dimensions": {
+      "width_cm": 2,
+      "length_cm": 350,
+      "depth_cm": 3
+    },
+    "location": {
+      "lat": 12.9785,
+      "lng": 77.6432,
+      "address": "CMH Road near Indiranagar Metro Flank",
+      "ward_no": 80,
+      "ward_name": "Indiranagar",
+      "zone": "East"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 42,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T11:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-east-01",
+      "name": "Indiranagar Sub-Division",
+      "corporation": "East",
+      "engineer": "Er. Deepa Nair",
+      "email": "subdiv.indiranagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1026",
+    "ticket_code": "NF-RD-1026",
+    "type": "surface_wear",
+    "category_label": "Superficial Binder Peeling",
+    "title": "Minor Surface Peeling on Peenya Industrial Main Road",
+    "description": "4cm shallow depression in industrial service lane.",
+    "severity": "LOW",
+    "severity_score": 39,
+    "confidence_pct": 86.5,
+    "dimensions": {
+      "width_cm": 35,
+      "length_cm": 40,
+      "depth_cm": 4
+    },
+    "location": {
+      "lat": 13.0315,
+      "lng": 77.5182,
+      "address": "Peenya Industrial Area Phase 1 Road",
+      "ward_no": 41,
+      "ward_name": "Peenya",
+      "zone": "North"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 44,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T12:15:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-north-08",
+      "name": "Peenya Sub-Division",
+      "corporation": "North",
+      "engineer": "Er. Ashok Vardhan",
+      "email": "subdiv.peenya@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1027",
+    "ticket_code": "NF-RD-1027",
+    "type": "surface_wear",
+    "category_label": "Asphalt Edge Erosion",
+    "title": "Minor Asphalt Edge Erosion on Bull Temple Road",
+    "description": "3cm shallow kerbside edge wear near Basavanagudi park.",
+    "severity": "LOW",
+    "severity_score": 32,
+    "confidence_pct": 84.5,
+    "dimensions": {
+      "width_cm": 25,
+      "length_cm": 30,
+      "depth_cm": 3
+    },
+    "location": {
+      "lat": 12.9421,
+      "lng": 77.5684,
+      "address": "Bull Temple Road, Basavanagudi",
+      "ward_no": 154,
+      "ward_name": "Basavanagudi",
+      "zone": "South"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 38,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T13:40:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-south-08",
+      "name": "Basavanagudi Sub-Division",
+      "corporation": "South",
+      "engineer": "Er. G. M. Chandrashekar",
+      "email": "subdiv.basavanagudi@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1028",
+    "ticket_code": "NF-RD-1028",
+    "type": "surface_wear",
+    "category_label": "Minor Surface Depression",
+    "title": "Shallow Surface Depression on Vasanth Nagar 1st Main",
+    "description": "4cm shallow pavement depression near community hall.",
+    "severity": "LOW",
+    "severity_score": 35,
+    "confidence_pct": 86,
+    "dimensions": {
+      "width_cm": 32,
+      "length_cm": 35,
+      "depth_cm": 4
+    },
+    "location": {
+      "lat": 12.9895,
+      "lng": 77.5904,
+      "address": "1st Main Road, Vasanth Nagar",
+      "ward_no": 92,
+      "ward_name": "Vasanth Nagar",
+      "zone": "Central"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 41,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T14:15:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-central-07",
+      "name": "Vasanth Nagar Sub-Division",
+      "corporation": "Central",
+      "engineer": "Er. Meenakshi Sundaram",
+      "email": "subdiv.vasanthnagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1029",
+    "ticket_code": "NF-RD-1029",
+    "type": "road_crack",
+    "category_label": "Pavement Joint Fissure",
+    "title": "Pavement Joint Fissure near Vijayanagar Club Road",
+    "description": "3cm linear expansion fissure between asphalt lanes.",
+    "severity": "LOW",
+    "severity_score": 33,
+    "confidence_pct": 85,
+    "dimensions": {
+      "width_cm": 2,
+      "length_cm": 400,
+      "depth_cm": 3
+    },
+    "location": {
+      "lat": 12.9712,
+      "lng": 77.5358,
+      "address": "Near Vijayanagar Club, West Bengaluru",
+      "ward_no": 123,
+      "ward_name": "Vijayanagar",
+      "zone": "West"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 39,
+    "reported_by": "patrol_vehicle_bumper_cam",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T15:10:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-west-03",
+      "name": "Vijayanagar Sub-Division",
+      "corporation": "West",
+      "engineer": "Er. S. R. Patil",
+      "email": "subdiv.vijayanagar@nammafix.gov.in"
+    }
+  },
+  {
+    "id": "DEF-2026-1030",
+    "ticket_code": "NF-RD-1030",
+    "type": "surface_wear",
+    "category_label": "Superficial Surface Wear",
+    "title": "Superficial Surface Wear on Sahakar Nagar Main Road",
+    "description": "4cm shallow surface wear. Minor aggregate raveling.",
+    "severity": "LOW",
+    "severity_score": 37,
+    "confidence_pct": 87,
+    "dimensions": {
+      "width_cm": 30,
+      "length_cm": 35,
+      "depth_cm": 4
+    },
+    "location": {
+      "lat": 13.0612,
+      "lng": 77.5891,
+      "address": "Sahakar Nagar Main Commercial Avenue",
+      "ward_no": 8,
+      "ward_name": "Sahakar Nagar",
+      "zone": "North"
+    },
+    "ai_calculated_priority": "P3_MEDIUM",
+    "ai_priority_score": 43,
+    "reported_by": "citizen_manual_camera",
+    "image_url": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+    "created_at": "2026-10-30T16:00:00Z",
+    "status": "Assigned to Sub-Division",
+    "workflow_stage": "ASSIGNED_TO_SUBDIVISION",
+    "assigned_subdivision": {
+      "id": "subdiv-north-07",
+      "name": "Sahakarnagar Sub-Division",
+      "corporation": "North",
+      "engineer": "Er. B. S. Kumar",
+      "email": "subdiv.sahakarnagar@nammafix.gov.in"
+    }
   }
 ]

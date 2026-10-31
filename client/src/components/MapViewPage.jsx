@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Compass,
   ArrowRight,
-  Info
+  Info,
+  Layers,
+  Filter
 } from 'lucide-react';
 import GISMapView from './GISMapView';
 
@@ -419,6 +421,48 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
     };
   }, [routingData, destination.name]);
 
+  // 5. Severity Filter for Map Indications: 'ALL' | 'CRITICAL' | 'MEDIUM' | 'LOW'
+  const [severityFilter, setSeverityFilter] = useState('ALL');
+
+  // Combined City & Route Defects List
+  const allMapDefects = useMemo(() => {
+    const list = [...defects];
+    if (calculatedRoutes?.activeDefects) {
+      calculatedRoutes.activeDefects.forEach(rd => {
+        if (!list.some(d => d.id === rd.id)) {
+          list.unshift(rd);
+        }
+      });
+    }
+    return list;
+  }, [defects, calculatedRoutes?.activeDefects]);
+
+  const criticalCount = useMemo(() => 
+    allMapDefects.filter(d => ['CRITICAL', 'SEVERE'].includes((d.severity || '').toUpperCase())).length,
+    [allMapDefects]
+  );
+  const mediumCount = useMemo(() => 
+    allMapDefects.filter(d => ['MEDIUM', 'MODERATE', 'HIGH'].includes((d.severity || '').toUpperCase())).length,
+    [allMapDefects]
+  );
+  const lowCount = useMemo(() => 
+    allMapDefects.filter(d => ['LOW', 'MINOR'].includes((d.severity || '').toUpperCase())).length,
+    [allMapDefects]
+  );
+
+  const displayedDefects = useMemo(() => {
+    if (severityFilter === 'CRITICAL') {
+      return allMapDefects.filter(d => ['CRITICAL', 'SEVERE'].includes((d.severity || '').toUpperCase()));
+    }
+    if (severityFilter === 'MEDIUM') {
+      return allMapDefects.filter(d => ['MEDIUM', 'MODERATE', 'HIGH'].includes((d.severity || '').toUpperCase()));
+    }
+    if (severityFilter === 'LOW') {
+      return allMapDefects.filter(d => ['LOW', 'MINOR'].includes((d.severity || '').toUpperCase()));
+    }
+    return allMapDefects;
+  }, [allMapDefects, severityFilter]);
+
   // Sync active route default whenever calculation updates
   useEffect(() => {
     if (calculatedRoutes?.recommendedRoute) {
@@ -696,10 +740,83 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
         </div>
       </div>
 
+      {/* 3. Severity Indications & Processing Filters Bar */}
+      <div className="bg-slate-900/90 p-3.5 sm:p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center space-x-2">
+          <Layers className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs font-bold text-white uppercase tracking-wider">
+            Defect Indications on Map:
+          </span>
+          <span className="text-xs text-slate-400 font-mono">
+            ({displayedDefects.length} active pins shown)
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Filter: ALL */}
+          <button
+            type="button"
+            onClick={() => setSeverityFilter('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+              severityFilter === 'ALL'
+                ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-600/30'
+                : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+            }`}
+          >
+            All Indications ({allMapDefects.length})
+          </button>
+
+          {/* Filter: CRITICAL */}
+          <button
+            type="button"
+            onClick={() => setSeverityFilter('CRITICAL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+              severityFilter === 'CRITICAL'
+                ? 'bg-rose-600 text-white border-rose-400 shadow-lg shadow-rose-600/30'
+                : 'bg-rose-950/30 text-rose-300 border-rose-500/30 hover:bg-rose-900/40'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            <span>Critical ({criticalCount})</span>
+            <span className="text-[10px] font-mono opacity-80">+60s</span>
+          </button>
+
+          {/* Filter: MEDIUM */}
+          <button
+            type="button"
+            onClick={() => setSeverityFilter('MEDIUM')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+              severityFilter === 'MEDIUM'
+                ? 'bg-amber-600 text-white border-amber-400 shadow-lg shadow-amber-600/30'
+                : 'bg-amber-950/30 text-amber-300 border-amber-500/30 hover:bg-amber-900/40'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span>Medium ({mediumCount})</span>
+            <span className="text-[10px] font-mono opacity-80">+25s</span>
+          </button>
+
+          {/* Filter: LOW */}
+          <button
+            type="button"
+            onClick={() => setSeverityFilter('LOW')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 border ${
+              severityFilter === 'LOW'
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-600/30'
+                : 'bg-emerald-950/30 text-emerald-300 border-emerald-500/30 hover:bg-emerald-900/40'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span>Low ({lowCount})</span>
+            <span className="text-[10px] font-mono opacity-80">+5s</span>
+          </button>
+        </div>
+      </div>
+
       {/* 4. Authentic Google Maps Satellite Map (Real Roads & Buildings, Continuous Solid Polylines) */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl p-2">
         <GISMapView
-          defects={calculatedRoutes?.activeDefects || defects}
+          defects={displayedDefects}
           userLocation={userLocation}
           destination={destination}
           activeRoute={activeRoute}
@@ -713,34 +830,47 @@ export default function MapViewPage({ onBack, defects = [], roads = [] }) {
       </div>
 
       {/* 5. Map Legend & Telemetry Indicators */}
-      <div className="bg-slate-900/70 p-3.5 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="text-slate-200 font-bold font-sans">Navigation Elements:</span>
-          <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded-full bg-blue-500 animate-ping inline-block" />
-            <span className="text-blue-300">Origin (Live Blinking Beacon)</span>
-          </span>
-          <span className="flex items-center space-x-1.5">
-            <span className="text-rose-500 font-bold">📍</span>
-            <span className="text-rose-300">Google Maps Destination Pin</span>
-          </span>
-          <span className="flex items-center space-x-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-rose-600 inline-block border border-white text-[9px] text-white font-bold text-center leading-3">
-              !
+      <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs font-mono text-slate-400 shadow-xl">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <span className="text-white font-bold font-sans">Defect Indications:</span>
+
+          {/* Critical Indicator */}
+          <div className="flex items-center space-x-1.5">
+            <span className="relative flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-600 border border-white text-[9px] text-white font-bold items-center justify-center leading-3">!</span>
             </span>
-            <span className="text-rose-300">Critical Pothole on Real Road (+60s)</span>
-          </span>
-          <span className="flex items-center space-x-1.5">
-            <span className="w-4 h-1.5 bg-rose-500 rounded-full inline-block" />
-            <span className="text-rose-300">Continuous Red Line</span>
-          </span>
-          <span className="flex items-center space-x-1.5">
-            <span className="w-4 h-1.5 bg-emerald-500 rounded-full inline-block" />
-            <span className="text-emerald-300">Continuous Safe Road Line</span>
-          </span>
+            <span className="text-rose-300 font-sans font-semibold">Critical (Depth ≥11cm • +60s crawl)</span>
+          </div>
+
+          {/* Medium Indicator */}
+          <div className="flex items-center space-x-1.5">
+            <span className="inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 border border-white text-[9px] text-white font-bold items-center justify-center leading-3">▲</span>
+            <span className="text-amber-300 font-sans font-semibold">Medium (Depth 6-10cm • +25s delay)</span>
+          </div>
+
+          {/* Low Indicator */}
+          <div className="flex items-center space-x-1.5">
+            <span className="inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border border-white text-[9px] text-white font-bold items-center justify-center leading-3">●</span>
+            <span className="text-emerald-300 font-sans font-semibold">Low (Depth 2-5cm • +5s notice)</span>
+          </div>
+
+          {/* Live Blinking Origin */}
+          <div className="flex items-center space-x-1.5">
+            <span className="w-3 h-3 rounded-full bg-blue-500 animate-ping inline-block" />
+            <span className="text-blue-300 font-sans">Origin (Live Blinking GPS)</span>
+          </div>
         </div>
-        <div className="text-slate-400">
-          Routes strictly adhere to real physical roads and highway corridors.
+
+        <div className="flex items-center space-x-3 text-slate-300 text-[11px] font-sans shrink-0">
+          <span className="flex items-center space-x-1">
+            <span className="w-3 h-1.5 bg-rose-500 rounded-full inline-block" />
+            <span>Pothole Route</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <span className="w-3 h-1.5 bg-emerald-500 rounded-full inline-block" />
+            <span>Safe Bypass Route</span>
+          </span>
         </div>
       </div>
     </div>

@@ -74,74 +74,119 @@ export default function GISMapView({
     defects.forEach(defect => {
       if (!defect.location || typeof defect.location.lat !== 'number' || typeof defect.location.lng !== 'number') return;
 
-      const isCritical = defect.severity === 'CRITICAL' || defect.severity === 'Severe';
-      const isHigh = defect.severity === 'HIGH';
+      const sev = (defect.severity || 'CRITICAL').toUpperCase();
+      const isCritical = sev === 'CRITICAL' || sev === 'SEVERE';
+      const isMedium = sev === 'MEDIUM' || sev === 'MODERATE' || sev === 'HIGH';
+      const isLow = sev === 'LOW' || sev === 'MINOR';
 
-      // Movie Radar Pulsing Effect for Critical Road Potholes
-      const markerHtml = isCritical ? `
-        <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(239, 68, 68, 0.45); animation: ping 1.3s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(239, 68, 68, 0.65); animation: pulse 1.6s ease-in-out infinite;"></div>
-          <div style="position: relative; width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 0 16px #ef4444; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 12px; font-weight: 900; font-family: monospace;">
-            !
+      // 3 Distinct Visual Markers for Critical, Medium, and Low
+      let markerHtml = '';
+      let badgeBg = '#ffe4e6';
+      let badgeColor = '#dc2626';
+      let badgeLabel = 'CRITICAL HAZARD';
+      let delayText = '⚠️ Axle Strike Risk: +60s Crawl Delay';
+      let alertBoxBg = '#fef2f2';
+      let alertBoxBorder = '#fecaca';
+      let alertBoxText = '#b91c1c';
+
+      if (isCritical) {
+        markerHtml = `
+          <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <div style="position: absolute; width: 38px; height: 38px; border-radius: 50%; background: rgba(239, 68, 68, 0.45); animation: ping 1.3s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="position: absolute; width: 28px; height: 28px; border-radius: 50%; background: rgba(239, 68, 68, 0.65); animation: pulse 1.6s ease-in-out infinite;"></div>
+            <div style="position: relative; width: 22px; height: 22px; border-radius: 50%; background: #dc2626; border: 2.5px solid #ffffff; box-shadow: 0 0 16px #ef4444; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 12px; font-weight: 900; font-family: monospace;">
+              !
+            </div>
           </div>
-        </div>
-      ` : `
-        <div style="
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #f59e0b;
-          border: 2px solid #ffffff;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #ffffff;
-          font-size: 10px;
-          font-weight: 800;
-          cursor: pointer;
-        ">
-          ▲
-        </div>
-      `;
+        `;
+        badgeBg = '#ffe4e6';
+        badgeColor = '#dc2626';
+        badgeLabel = 'CRITICAL HAZARD';
+        delayText = '⚠️ Axle Strike Risk: +60s Crawl Delay';
+        alertBoxBg = '#fef2f2';
+        alertBoxBorder = '#fecaca';
+        alertBoxText = '#b91c1c';
+      } else if (isMedium) {
+        markerHtml = `
+          <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: rgba(245, 158, 11, 0.35); animation: pulse 1.8s ease-in-out infinite;"></div>
+            <div style="position: relative; width: 20px; height: 20px; border-radius: 50%; background: #f59e0b; border: 2px solid #ffffff; box-shadow: 0 0 10px rgba(245, 158, 11, 0.7); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 10px; font-weight: 900;">
+              ▲
+            </div>
+          </div>
+        `;
+        badgeBg = '#fef3c7';
+        badgeColor = '#d97706';
+        badgeLabel = 'MEDIUM SEVERITY';
+        delayText = '⚠️ Road Bumps / Cracks: +25s Caution';
+        alertBoxBg = '#fffbeb';
+        alertBoxBorder = '#fde68a';
+        alertBoxText = '#b45309';
+      } else {
+        // LOW SEVERITY
+        markerHtml = `
+          <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: rgba(16, 185, 129, 0.3); animation: pulse 2.2s ease-in-out infinite;"></div>
+            <div style="position: relative; width: 18px; height: 18px; border-radius: 50%; background: #059669; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 9px; font-weight: 900;">
+              ●
+            </div>
+          </div>
+        `;
+        badgeBg = '#d1fae5';
+        badgeColor = '#059669';
+        badgeLabel = 'LOW SEVERITY';
+        delayText = 'ℹ️ Surface Roughness: Minor Caution (+5s)';
+        alertBoxBg = '#ecfdf5';
+        alertBoxBorder = '#a7f3d0';
+        alertBoxText = '#047857';
+      }
 
       const customIcon = L.divIcon({
         className: 'road-pothole-marker',
         html: markerHtml,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
       });
 
       const marker = L.marker([defect.location.lat, defect.location.lng], { icon: customIcon }).addTo(map);
 
-      // Popup with inspection telemetry & delay calculation
+      const thumbImg = defect.image_url ? `
+        <div style="height: 85px; border-radius: 8px; overflow: hidden; margin-bottom: 6px; background: #0f172a;">
+          <img src="${defect.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Defect Photo" />
+        </div>
+      ` : '';
+
+      // Detailed Telemetry Popup
       marker.bindPopup(`
-        <div style="min-width: 230px; font-family: system-ui, sans-serif; padding: 4px; color: #0f172a;">
+        <div style="min-width: 240px; font-family: system-ui, sans-serif; padding: 4px; color: #0f172a;">
+          ${thumbImg}
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-weight: 800; font-size: 11px; font-family: monospace; color: #0284c7;">
-              #${defect.ticket_code || 'ROAD-HAZARD'}
+              #${defect.ticket_code || 'ROAD-DEFECT'}
             </span>
-            <span style="font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; background: #ffe4e6; color: #dc2626; text-transform: uppercase;">
-              ${defect.severity || 'CRITICAL'}
+            <span style="font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; background: ${badgeBg}; color: ${badgeColor}; text-transform: uppercase;">
+              ${badgeLabel}
             </span>
           </div>
 
           <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 4px;">
-            ${defect.category_label || 'Severe Road Pothole'}
+            ${defect.title || defect.category_label || 'Road Defect'}
           </div>
 
           <div style="font-size: 11px; color: #475569; margin-bottom: 6px;">
-            📍 ${defect.location.address || 'Real Road Navigation Corridor'}
+            📍 ${defect.location.address || 'Bengaluru Road Corridor'}
           </div>
 
-          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 6px; font-size: 11px; font-family: monospace; margin-bottom: 6px;">
-            <div style="color: #b91c1c; font-weight: bold;">⚠️ Vehicle Slowdown: +60s Crawl Delay</div>
-            <div style="color: #475569; margin-top: 2px;">Depth: <strong style="color: #dc2626;">${defect.dimensions?.depth_cm || 15} cm</strong> • Width: <strong>${defect.dimensions?.width_cm || 55} cm</strong></div>
+          <div style="background: ${alertBoxBg}; border: 1px solid ${alertBoxBorder}; border-radius: 8px; padding: 6px; font-size: 11px; font-family: monospace; margin-bottom: 6px;">
+            <div style="color: ${alertBoxText}; font-weight: bold;">${delayText}</div>
+            <div style="color: #475569; margin-top: 2px;">
+              Depth: <strong style="color: ${badgeColor};">${defect.dimensions?.depth_cm || 10} cm</strong> • Width: <strong>${defect.dimensions?.width_cm || 45} cm</strong>
+            </div>
           </div>
 
-          <div style="font-size: 10px; color: #64748b;">
-            Road GPS: ${defect.location.lat.toFixed(5)}, ${defect.location.lng.toFixed(5)}
+          <div style="font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
+            <span>Ward ${defect.location.ward_no || 150}</span>
+            <span>GPS: ${defect.location.lat.toFixed(4)}, ${defect.location.lng.toFixed(4)}</span>
           </div>
         </div>
       `);
